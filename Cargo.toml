@@ -2,6 +2,10 @@
 name = "cnote"
 version = "0.1.0"
 edition = "2021"
+authors = ["Al alexwhite1964@icloud.com"]
+description = "cli packet capture program, ramping up for gui"
+license = "MIT"
+repository = "https://github.com/sigh-gone/cnote"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
