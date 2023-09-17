@@ -1,7 +1,6 @@
-use crate::packet_objects::raw::FieldType;
+use crate::packet_objects::basics::FieldType;
 use crate::traits::Processable;
 use pnet::packet::{ipv4, ipv6, Packet};
-use std::net::{Ipv4Addr, Ipv6Addr};
 #[derive(Debug, Clone)]
 pub struct Ipv4Header {
     pub version_ihl: u8,
@@ -11,10 +10,11 @@ pub struct Ipv4Header {
     pub flags_fragment_offset: u16,
     pub time_to_live: u8,
     pub header_checksum: u16,
-    pub source_address: Ipv4Addr,
-    pub destination_address: Ipv4Addr,
+    pub source_address: String,
+    pub destination_address: String,
     pub next_header: FieldType,
     pub payload: Vec<u8>,
+    pub malformed: bool,
 }
 /*
 let payload = self.payload().to_vec();
@@ -35,37 +35,48 @@ pub struct Ipv6Header {
     pub payload_length: u16,
     pub next_header: FieldType,
     pub hop_limit: u8,
-    pub source: Ipv6Addr,
-    pub destination: Ipv6Addr,
+    pub source: String,
+    pub destination: String,
     pub version: u8,
+}
+
+impl Ipv4Header {
+    pub fn deformed_packet(payload: Vec<u8>) -> Self {
+        Ipv4Header {
+            version_ihl: 0,
+            dscp_ecn: 0,
+            total_length: 0,
+            identification: 0,
+            flags_fragment_offset: 0,
+            time_to_live: 0,
+            header_checksum: 0,
+            source_address: String::from(""),
+            destination_address: String::from(""),
+            next_header: FieldType {
+                field_name: "malformed".to_string(),
+                num: 0,
+            },
+            payload,
+            malformed: true,
+        }
+    }
 }
 
 impl<'a> Processable<'a, Ipv4Header> for ipv4::Ipv4Packet<'a> {
     fn process(&self) -> Ipv4Header {
-        let destination_address = self.get_destination();
-        let source_address = self.get_source();
-        let header_checksum = self.get_checksum();
-        let time_to_live = self.get_ttl();
-        let flags_fragment_offset = self.get_fragment_offset();
-        let identification = self.get_identification();
-        let total_length = self.get_total_length();
-        let dscp_ecn = self.get_dscp();
-        let version_ihl = self.get_version();
-        let next_header = set_protocol_field(self.get_next_level_protocol().0);
-        let payload = self.payload().to_vec();
-
         Ipv4Header {
-            version_ihl,
-            dscp_ecn,
-            total_length,
-            identification,
-            flags_fragment_offset,
-            time_to_live,
-            header_checksum,
-            source_address,
-            destination_address,
-            next_header,
-            payload,
+            version_ihl: self.get_version(),
+            dscp_ecn: self.get_dscp(),
+            total_length: self.get_total_length(),
+            identification: self.get_identification(),
+            flags_fragment_offset: self.get_fragment_offset(),
+            time_to_live: self.get_ttl(),
+            header_checksum: self.get_checksum(),
+            source_address: self.get_source().to_string(),
+            destination_address: self.get_destination().to_string(),
+            next_header: set_protocol_field(self.get_next_level_protocol().0),
+            payload: self.payload().to_vec(),
+            malformed: false,
         }
     }
 }

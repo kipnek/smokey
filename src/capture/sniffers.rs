@@ -1,14 +1,14 @@
-use crate::packet_objects::raw::RawPacket;
-use std::sync::{Arc, Mutex,};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::{panic, thread};
+use crate::packet_objects::basics::BasePacket;
 use circular_buffer::CircularBuffer;
 use pcap::Device;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::{panic, thread};
 
 #[derive(Debug, Clone, Default)]
 pub struct LiveCap {
     pub interface: Vec<String>,
-    pub live_buffer: Arc<Mutex<CircularBuffer<30, RawPacket>>>,
+    pub live_buffer: Arc<Mutex<CircularBuffer<30, BasePacket>>>,
     pub stop: Arc<AtomicBool>,
 }
 
@@ -20,29 +20,28 @@ impl LiveCap {
             stop: Arc::new(AtomicBool::new(false)),
         }
     }
-    pub fn live_capture(&mut self){//, interfaces:Vec<String>) {
+    pub fn live_capture(&mut self) {
+        //, interfaces:Vec<String>) {
         let stop = self.stop.clone();
         let live_buffer = self.live_buffer.clone();
         thread::spawn(move || {
             let mut index = 0;
             let device = Device::lookup()
-                .and_then(|dev_result| {
-                    match dev_result {
-                        Some(dev) => Ok(dev),
-                        None => Err(pcap::Error::PcapError("no device".to_string())),
-                    }
+                .and_then(|dev_result| match dev_result {
+                    Some(dev) => Ok(dev),
+                    None => Err(pcap::Error::PcapError("no device".to_string())),
                 })
                 .unwrap_or_else(|err| panic!("Device lookup failed: {}", err));
 
-            if let Ok(mut cap) = pcap::Capture::from_device(device)
-                .and_then(|cap| cap.immediate_mode(true).open())
+            if let Ok(mut cap) =
+                pcap::Capture::from_device(device).and_then(|cap| cap.immediate_mode(true).open())
             {
                 while let Ok(packet) = cap.next_packet() {
                     if stop.load(Ordering::Relaxed) {
                         break;
                     }
                     if let Ok(mut buffer_lock) = live_buffer.lock() {
-                        buffer_lock.push_back(RawPacket::new(index, packet.data.to_vec()));
+                        buffer_lock.push_back(BasePacket::new(index, packet.data.to_vec()));
                         index += 1;
                     }
                 }
@@ -50,10 +49,8 @@ impl LiveCap {
                 drop(live_buffer);
             }
         });
-
     }
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
     }
 }
-

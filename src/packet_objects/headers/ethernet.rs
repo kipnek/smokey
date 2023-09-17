@@ -1,4 +1,4 @@
-use crate::packet_objects::raw::FieldType;
+use crate::packet_objects::basics::FieldType;
 use crate::traits::Processable;
 use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
@@ -32,7 +32,7 @@ impl EthernetHeader {
             0x0800 => "IPv4".to_string(),
             0x0806 => "ARP".to_string(),
             0x86DD => "IPv6".to_string(),
-            _=> "Unknown".to_string(),
+            _ => "Unknown".to_string(),
         };
         FieldType {
             field_name: name,
