@@ -5,10 +5,10 @@ use pnet::packet::ethernet::EthernetPacket;
 pub struct LinkProcessor {}
 
 impl LinkProcessor {
-    pub fn link_process(raw_packet: &[u8]) -> LinkLayer {
-        let mut layer = LinkLayer::Empty;
+    pub fn link_process(raw_packet: &[u8]) -> Option<LinkLayer> {
+        let mut layer = None;
         if let Some(ethernet_packet) = EthernetPacket::new(raw_packet) {
-            layer = LinkLayer::Ethernet(ethernet_packet.process());
+            layer = Some(LinkLayer::Ethernet(ethernet_packet.process()));
         }
         layer
     }

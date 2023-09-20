@@ -3,7 +3,6 @@ use crate::packet_objects::headers::ethernet::EthernetHeader;
 #[derive(Debug, Clone)]
 pub enum LinkLayer {
     Ethernet(EthernetHeader),
-    Empty,
 }
 
 /*

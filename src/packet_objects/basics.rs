@@ -9,9 +9,9 @@ use crate::packet_objects::layers::transport::TransportLayer;
 pub struct BasePacket {
     pub id: i32,
     pub date: String,
-    pub link_header: LinkLayer,
-    pub internet_header: InternetLayer,
-    pub transport_header: TransportLayer,
+    pub link_header: Option<LinkLayer>,
+    pub internet_header: Option<InternetLayer>,
+    pub transport_header: Option<TransportLayer>,
     pub packet_data: Vec<u8>,
 }
 #[derive(Debug, Clone)]
@@ -34,9 +34,9 @@ impl BasePacket {
         BasePacket {
             id,
             date: chrono::offset::Local::now().to_string(),
-            link_header: LinkLayer::Empty,
-            internet_header: InternetLayer::Empty,
-            transport_header: TransportLayer::Empty,
+            link_header: None,
+            internet_header: None,
+            transport_header: None,
             packet_data,
         }
         .datalink_parse()
@@ -60,29 +60,33 @@ impl BasePacket {
     }
 
     pub fn network_parse(&mut self) -> &mut Self {
-        match self.link_header {
-            LinkLayer::Ethernet(ref eh) => {
-                self.internet_header =
-                    InternetProcessor::process_internet(&eh.payload, &eh.ether_type.num);
+        if let Some(eh) = &self.link_header {
+            match eh {
+                LinkLayer::Ethernet(eh) => {
+                    self.internet_header =
+                        InternetProcessor::process_internet(&eh.payload, &eh.ether_type.num);
+                }
             }
-            _ => {}
         }
 
         self
     }
 
     pub fn transport_parse(&mut self) -> &mut Self {
-        match self.internet_header {
-            InternetLayer::IPv4(ref header) => {
-                self.transport_header =
-                    TransportProcessor::process_transport(&header.payload, &header.next_header.num);
+
+        if let Some(iheader) = &self.internet_header {
+            match iheader {
+                InternetLayer::IPv4(ref header) => {
+                    self.transport_header =
+                        TransportProcessor::process_transport(&header.payload, &header.next_header.num);
+                }
+                InternetLayer::IPv6(ref header) => {
+                    self.transport_header =
+                        TransportProcessor::process_transport(&header.payload, &header.next_header.num);
+                }
             }
-            InternetLayer::IPv6(ref header) => {
-                self.transport_header =
-                    TransportProcessor::process_transport(&header.payload, &header.next_header.num);
-            }
-            InternetLayer::Empty => {}
         }
+
 
         self
     }

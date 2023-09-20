@@ -7,11 +7,11 @@ use pnet::packet::{tcp, udp};
 pub struct TransportProcessor {}
 
 impl TransportProcessor {
-    pub fn process_transport(payload: &[u8], next_header: &u16) -> TransportLayer {
+    pub fn process_transport(payload: &[u8], next_header: &u16) -> Option<TransportLayer> {
         match next_header {
-            6 => process_tcp(payload),
-            17 => process_udp(payload),
-            _ => TransportLayer::Empty,
+            6 => Some(process_tcp(payload)),
+            17 => Some(process_udp(payload)),
+            _ => None,
         }
     }
 }

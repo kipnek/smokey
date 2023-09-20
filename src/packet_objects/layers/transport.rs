@@ -5,5 +5,4 @@ use crate::packet_objects::headers::udp::UdpHeader;
 pub enum TransportLayer {
     TransportControlProtocol(TcpHeader),
     UserDatagramProtocol(UdpHeader),
-    Empty,
 }

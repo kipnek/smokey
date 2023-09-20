@@ -16,17 +16,7 @@ pub struct Ipv4Header {
     pub payload: Vec<u8>,
     pub malformed: bool,
 }
-/*
-let payload = self.payload().to_vec();
-let traffic_class = self.get_traffic_class();
-let flow_label =  self.get_flow_label();
-let payload_length = self.get_payload_length();
-let next_header = set_protocol_field(self.get_next_header().0);
-let hop_limit = self.get_hop_limit();
-let source = self.get_source();
-let destination = self.get_destination();
-let version = self.get_version();
-*/
+
 #[derive(Debug, Clone)]
 pub struct Ipv6Header {
     pub payload: Vec<u8>,
@@ -83,26 +73,16 @@ impl<'a> Processable<'a, Ipv4Header> for ipv4::Ipv4Packet<'a> {
 
 impl<'a> Processable<'a, Ipv6Header> for ipv6::Ipv6Packet<'a> {
     fn process(&self) -> Ipv6Header {
-        let payload = self.payload().to_vec();
-        let traffic_class = self.get_traffic_class();
-        let flow_label = self.get_flow_label();
-        let payload_length = self.get_payload_length();
-        let next_header = set_protocol_field(self.get_next_header().0);
-        let hop_limit = self.get_hop_limit();
-        let source = self.get_source();
-        let destination = self.get_destination();
-        let version = self.get_version();
-
         Ipv6Header {
-            payload,
-            traffic_class,
-            flow_label: flow_label as u16,
-            payload_length,
-            next_header,
-            hop_limit,
-            source,
-            destination,
-            version,
+            payload :self.payload().to_vec(),
+            traffic_class:self.get_traffic_class(),
+            flow_label: self.get_flow_label() as u16,
+            payload_length : self.get_payload_length(),
+            next_header : set_protocol_field(self.get_next_header().0),
+            hop_limit : self.get_hop_limit(),
+            source : self.get_source().to_string(),
+            destination : self.get_destination().to_string(),
+            version : self.get_version(),
         }
     }
 }

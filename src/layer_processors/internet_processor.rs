@@ -6,19 +6,21 @@ use pnet::packet::ipv4;
 pub struct InternetProcessor {}
 
 impl InternetProcessor {
-    pub fn process_internet(payload: &[u8], next_header: &u16) -> InternetLayer {
+    pub fn process_internet(payload: &[u8], next_header: &u16) -> Option<InternetLayer> {
         match next_header {
-            0x0800 => process_ipv4(payload),
+            0x0800 => {//ipv4
+                Some(process_ipv4(payload))
+            },
             0x0806 => {
                 //EtherType::Arp,
-                return InternetLayer::Empty;
+                return None;
             }
             0x86DD => {
                 //EtherType::Ipv6,
-                return InternetLayer::Empty;
+                return None;
             }
             _ => {
-                return InternetLayer::Empty;
+                return None;
             }
         }
     }
