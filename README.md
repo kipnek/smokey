@@ -22,7 +22,7 @@ pub struct BasePacket {
 ```
 Each of these fields leads to
 
-#### layers
+### Layers
 In the ```layers``` directory, there are enums that represent the layers of the TCP/IP stack. I chose this because it 
 more easily aligns with development. 
 each layer enum variant leads to 
