@@ -18,16 +18,16 @@ impl TransportProcessor {
 
 fn process_tcp(payload: &[u8]) -> TransportLayer {
     if let Some(tcp_packet) = tcp::TcpPacket::new(payload) {
-        TransportLayer::TransportControlProtocol(tcp_packet.process())
+        TransportLayer::Tcp(tcp_packet.process())
     } else {
-        TransportLayer::TransportControlProtocol(TcpHeader::deformed_packet(payload.to_vec()))
+        TransportLayer::Tcp(TcpHeader::deformed_packet(payload.to_vec()))
     }
 }
 
 fn process_udp(payload: &[u8]) -> TransportLayer {
     if let Some(udp_packet) = udp::UdpPacket::new(payload) {
-        TransportLayer::UserDatagramProtocol(udp_packet.process())
+        TransportLayer::Udp(udp_packet.process())
     } else {
-        TransportLayer::UserDatagramProtocol(UdpHeader::deformed_packet(payload.to_vec()))
+        TransportLayer::Udp(UdpHeader::deformed_packet(payload.to_vec()))
     }
 }
