@@ -6,11 +6,11 @@ use pnet::packet::{tcp, udp};
 pub struct TransportProcessor {}
 
 impl TransportProcessor {
-    pub fn process_protocol(payload: &[u8], next_header: &u16) -> Option<ProtocolLayer> {
+    pub fn process_protocol(payload: &[u8], next_header: &u16) -> ProtocolLayer {
         match next_header {
-            6 => Some(process_tcp(payload)),
-            17 => Some(process_udp(payload)),
-            _ => Some(ProtocolLayer::Unknown),
+            6 => process_tcp(payload),
+            17 => process_udp(payload),
+            _ => ProtocolLayer::Unknown,
         }
     }
 }

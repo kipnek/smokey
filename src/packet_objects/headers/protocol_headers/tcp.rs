@@ -25,6 +25,7 @@ pub struct Flags {
     syn: bool,
     fin: bool,
 }
+
 impl<'a> Processable<'a, TcpHeader> for tcp::TcpPacket<'a> {
     fn process(&self) -> TcpHeader {
         TcpHeader {
@@ -78,16 +79,3 @@ impl TcpHeader {
         }
     }
 }
-/*
-   pub source_port: u16,
-   pub destination_port: u16,
-   pub sequence_number: u32,
-   pub acknowledgment_number: u32,
-   pub data_offset_reserved_flags: u8,
-   pub window_size: u16,
-   pub checksum: u16,
-   pub urgent_pointer: u16,
-   pub flags: Flags,
-   pub payload: Vec<u8>,
-   pub malformed :bool,
-*/
