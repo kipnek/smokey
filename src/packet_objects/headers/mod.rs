@@ -1,5 +1,5 @@
-pub mod ethernet;
-pub mod http;
-pub mod ip;
-pub mod tcp;
-pub mod udp;
+
+pub mod protocol_headers;
+pub mod link_headers;
+pub mod internet_headers;
+pub mod application_headers;

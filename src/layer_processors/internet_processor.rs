@@ -13,14 +13,14 @@ impl InternetProcessor {
             },
             0x0806 => {
                 //EtherType::Arp,
-                return None;
+                return Some(InternetLayer::Unknown);
             }
             0x86DD => {
                 //EtherType::Ipv6,
-                return None;
+                return Some(InternetLayer::Unknown);
             }
             _ => {
-                return None;
+                return Some(InternetLayer::Unknown);
             }
         }
     }

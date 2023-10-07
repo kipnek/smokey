@@ -6,10 +6,10 @@ pub struct LinkProcessor {}
 
 impl LinkProcessor {
     pub fn link_process(raw_packet: &[u8]) -> Option<LinkLayer> {
-        let mut layer = None;
-        if let Some(ethernet_packet) = EthernetPacket::new(raw_packet) {
-            layer = Some(LinkLayer::Ethernet(ethernet_packet.process()));
+        return if let Some(ethernet_packet) = EthernetPacket::new(raw_packet) {
+            Some(LinkLayer::Ethernet(ethernet_packet.process()))
+        } else {
+            Some(LinkLayer::Unknown)
         }
-        layer
     }
 }
