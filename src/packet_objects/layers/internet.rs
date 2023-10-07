@@ -6,5 +6,3 @@ pub enum InternetLayer {
     IPv6(Ipv6Header),
     Unknown,
 }
-
-

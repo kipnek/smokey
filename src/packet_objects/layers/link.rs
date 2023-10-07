@@ -5,5 +5,3 @@ pub enum LinkLayer {
     Ethernet(EthernetHeader),
     Unknown,
 }
-
-

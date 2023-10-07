@@ -6,7 +6,7 @@ pub trait Processable<'a, T> {
 pub trait Parsable<T> {
     fn parse(&self) -> T;
 }
-pub trait InternetHeaderTrait {
+pub trait NextHeaderTrait {
     fn payload(&self) -> &[u8];
     fn next_header(&self) -> u16;
 }

@@ -1,5 +1,5 @@
 use crate::packet_objects::basics::FieldType;
-use crate::traits::{InternetHeaderTrait, Processable};
+use crate::traits::{NextHeaderTrait, Processable};
 use pnet::packet::{ipv4, ipv6, Packet};
 #[derive(Debug, Clone)]
 pub struct Ipv4Header {
@@ -71,7 +71,7 @@ impl<'a> Processable<'a, Ipv4Header> for ipv4::Ipv4Packet<'a> {
     }
 }
 
-impl InternetHeaderTrait for Ipv4Header {
+impl NextHeaderTrait for Ipv4Header {
     fn payload(&self) -> &[u8] {
         &self.payload
     }
@@ -83,20 +83,20 @@ impl InternetHeaderTrait for Ipv4Header {
 impl<'a> Processable<'a, Ipv6Header> for ipv6::Ipv6Packet<'a> {
     fn process(&self) -> Ipv6Header {
         Ipv6Header {
-            payload :self.payload().to_vec(),
-            traffic_class:self.get_traffic_class(),
+            payload: self.payload().to_vec(),
+            traffic_class: self.get_traffic_class(),
             flow_label: self.get_flow_label() as u16,
-            payload_length : self.get_payload_length(),
-            next_header : set_protocol_field(self.get_next_header().0),
-            hop_limit : self.get_hop_limit(),
-            source : self.get_source().to_string(),
-            destination : self.get_destination().to_string(),
-            version : self.get_version(),
+            payload_length: self.get_payload_length(),
+            next_header: set_protocol_field(self.get_next_header().0),
+            hop_limit: self.get_hop_limit(),
+            source: self.get_source().to_string(),
+            destination: self.get_destination().to_string(),
+            version: self.get_version(),
         }
     }
 }
 
-impl InternetHeaderTrait for Ipv6Header {
+impl NextHeaderTrait for Ipv6Header {
     fn payload(&self) -> &[u8] {
         &self.payload
     }

@@ -31,7 +31,6 @@ fn process_udp(payload: &[u8]) -> ProtocolLayer {
     }
 }
 
-
 /*
 
                &IpNextHeaderProtocols::Hopopt => "Hopopt",         // 0

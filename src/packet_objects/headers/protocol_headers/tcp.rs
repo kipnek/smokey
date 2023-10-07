@@ -37,7 +37,7 @@ impl<'a> Processable<'a, TcpHeader> for tcp::TcpPacket<'a> {
             window_size: self.get_window(),
             checksum: self.get_checksum(),
             urgent_pointer: self.get_urgent_ptr(),
-            flags: TcpHeader::process_flags(self.get_flags().try_into().unwrap()),
+            flags: TcpHeader::process_flags(self.get_flags()),
             payload: self.payload().to_vec(),
             malformed: false,
         }
@@ -48,12 +48,12 @@ impl TcpHeader {
     pub fn process_flags(flags_byte: u8) -> Flags {
         // Extract individual flag values using bitwise operations
         Flags {
-            urg : (flags_byte & 0b100000) != 0,
-            ack : (flags_byte & 0b010000) != 0,
-            psh : (flags_byte & 0b001000) != 0,
-            rst : (flags_byte & 0b000100) != 0,
-            syn : (flags_byte & 0b000010) != 0,
-            fin : (flags_byte & 0b000001) != 0,
+            urg: (flags_byte & 0b100000) != 0,
+            ack: (flags_byte & 0b010000) != 0,
+            psh: (flags_byte & 0b001000) != 0,
+            rst: (flags_byte & 0b000100) != 0,
+            syn: (flags_byte & 0b000010) != 0,
+            fin: (flags_byte & 0b000001) != 0,
         }
     }
     pub fn deformed_packet(payload: Vec<u8>) -> Self {

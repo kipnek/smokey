@@ -1,27 +1,27 @@
-use crate::packet_objects::headers::internet_headers::ip::{Ipv4Header,Ipv6Header};
+use crate::packet_objects::headers::internet_headers::ip::{Ipv4Header};
 use crate::packet_objects::layers::internet::InternetLayer;
 use crate::traits::Processable;
 use pnet::packet::ipv4;
-use crate::packet_objects::headers::internet_headers::ip;
 
 pub struct InternetProcessor {}
 
 impl InternetProcessor {
     pub fn process_internet(payload: &[u8], next_header: &u16) -> InternetLayer {
         match next_header {
-            0x0800 => {//ipv4
+            0x0800 => {
+                //ipv4
                 process_ipv4(payload)
-            },
+            }
             0x0806 => {
                 //EtherType::Arp,
-                return InternetLayer::Unknown;
+                InternetLayer::Unknown
             }
             0x86DD => {
                 //EtherType::Ipv6,
-                return InternetLayer::Unknown;
+                InternetLayer::Unknown
             }
             _ => {
-                return InternetLayer::Unknown;
+               InternetLayer::Unknown
             }
         }
     }

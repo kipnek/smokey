@@ -1,11 +1,10 @@
 use crate::packet_objects::basics::BasePacket;
 use circular_buffer::CircularBuffer;
 use pcap::Device;
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};
-use std::collections::VecDeque;
-
 
 /*
 for gui implementation
@@ -70,11 +69,10 @@ pub struct CliCap {
 }
 
 impl CliCap {
-    pub fn capture(&mut self) -> Result<(), String>{
+    pub fn capture(&mut self) -> Result<(), String> {
         let stop = self.stop.clone();
         let cli_buffer = self.cli_buffer.clone();
         thread::spawn(move || {
-
             let mut index = 0;
 
             //only for development

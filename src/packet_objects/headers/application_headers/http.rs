@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct HttpHeader {
     pub request: Option<HttpRequest>,
     pub response: Option<HttpResponse>,
@@ -5,6 +6,7 @@ pub struct HttpHeader {
 
 impl HttpHeader {}
 
+#[derive(Debug, Clone)]
 pub struct HttpRequest {
     pub user_agent: String,
     pub host: String,
@@ -16,6 +18,7 @@ pub struct HttpRequest {
     pub connection: String,
     pub security_headers: Option<SecurityHeaders>,
 }
+#[derive(Debug, Clone)]
 pub struct HttpResponse {
     pub content_type: String,
     pub content_length: u64,
@@ -27,6 +30,7 @@ pub struct HttpResponse {
     pub last_modified: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct SecurityHeaders {
     pub strict_transport_security: Hsts,
     pub content_security_policy: Csp,
@@ -35,12 +39,14 @@ pub struct SecurityHeaders {
     pub xss_protection: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct Hsts {
     pub max_age: u64,
     pub include_subdomains: bool,
     pub preload: bool,
 }
 
+#[derive(Debug, Clone)]
 pub struct Csp {
     default_src: String,
     script_src: String,
