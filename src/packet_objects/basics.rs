@@ -4,6 +4,8 @@ use crate::layer_processors::transport_processor::TransportProcessor;
 use crate::packet_objects::layers::internet::InternetLayer;
 use crate::packet_objects::layers::link::LinkLayer;
 use crate::packet_objects::layers::transport::TransportLayer;
+use serde::{Deserialize, Serialize};
+use crate::traits::InternetHeaderTrait;
 
 #[derive(Debug, Clone)]
 pub struct BasePacket {
@@ -13,12 +15,24 @@ pub struct BasePacket {
     pub internet_header: Option<InternetLayer>,
     pub transport_header: Option<TransportLayer>,
     pub packet_data: Vec<u8>,
+    pub protocol : Protocol,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FieldType {
     pub field_name: String,
     pub num: u16,
 }
+
+pub enum Protocol {
+    IPv4,
+    IPv6,
+    TCP,
+    UDP,
+    ETHERNET,
+    HTTP,
+    UNKNOWN
+}
+
 
 /*
 
@@ -73,21 +87,14 @@ impl BasePacket {
     }
 
     pub fn transport_parse(&mut self) -> &mut Self {
-
         if let Some(iheader) = &self.internet_header {
-            match iheader {
-                InternetLayer::IPv4(ref header) => {
-                    self.transport_header =
-                        TransportProcessor::process_transport(&header.payload, &header.next_header.num);
-                }
-                InternetLayer::IPv6(ref header) => {
-                    self.transport_header =
-                        TransportProcessor::process_transport(&header.payload, &header.next_header.num);
-                }
-            }
+            let header_trait: &dyn InternetHeaderTrait = match iheader {
+                InternetLayer::IPv4(ref header) => header,
+                InternetLayer::IPv6(ref header) => header,
+            };
+            self.transport_header =
+                TransportProcessor::process_transport(&header_trait.payload(), &header_trait.next_header());
         }
-
-
         self
     }
 }

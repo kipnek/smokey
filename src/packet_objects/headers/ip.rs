@@ -1,5 +1,5 @@
 use crate::packet_objects::basics::FieldType;
-use crate::traits::Processable;
+use crate::traits::{InternetHeaderTrait, Processable};
 use pnet::packet::{ipv4, ipv6, Packet};
 #[derive(Debug, Clone)]
 pub struct Ipv4Header {
@@ -71,6 +71,15 @@ impl<'a> Processable<'a, Ipv4Header> for ipv4::Ipv4Packet<'a> {
     }
 }
 
+impl InternetHeaderTrait for Ipv4Header {
+    fn payload(&self) -> &[u8] {
+        &self.payload
+    }
+    fn next_header(&self) -> u16 {
+        self.next_header.num
+    }
+}
+
 impl<'a> Processable<'a, Ipv6Header> for ipv6::Ipv6Packet<'a> {
     fn process(&self) -> Ipv6Header {
         Ipv6Header {
@@ -84,6 +93,15 @@ impl<'a> Processable<'a, Ipv6Header> for ipv6::Ipv6Packet<'a> {
             destination : self.get_destination().to_string(),
             version : self.get_version(),
         }
+    }
+}
+
+impl InternetHeaderTrait for Ipv6Header {
+    fn payload(&self) -> &[u8] {
+        &self.payload
+    }
+    fn next_header(&self) -> u16 {
+        self.next_header.num
     }
 }
 

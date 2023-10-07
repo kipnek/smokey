@@ -2,8 +2,8 @@ use crate::packet_objects::basics::FieldType;
 use crate::traits::Processable;
 use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
-
-#[derive(Debug, Clone)]
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Serialize)]
 pub struct EthernetHeader {
     pub source_mac: String,
     pub destination_mac: String,
