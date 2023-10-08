@@ -125,6 +125,7 @@ impl BasePacket {
                     header.icmp_code, header.icmp_type
                 )
             }
+            ProtocolLayer::Unknown=>{}
         }
 
         self.summary = Summary {
