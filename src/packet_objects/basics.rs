@@ -54,10 +54,10 @@ impl BasePacket {
             protocol_layer: ProtocolLayer::Unknown,
             application_layer: None,
             summary: Summary {
-                protocol: "".to_string(),
-                source: "".to_string(),
-                destination: "".to_string(),
-                info: "".to_string(),
+                protocol: "unknown".to_string(),
+                source: "unknown".to_string(),
+                destination: "unknown".to_string(),
+                info: "unknown".to_string(),
             },
             packet_data,
         }
@@ -75,67 +75,54 @@ impl BasePacket {
      */
 
     pub fn set_summary(&mut self) -> &mut Self {
-        let (mut source, mut destination, mut protocol, mut info) = (
-            "unknown".to_string(),
-            "unknown".to_string(),
-            "Unknown".to_string(),
-            "unknown".to_string(),
-        );
         match self.internet_layer {
             InternetLayer::IPv4(ref header) => {
-                source = header.source_address.to_string();
-                destination = header.destination_address.to_string();
-                protocol = "IPv4".to_string();
-                info = format!("{} is connecting to {}", source, destination);
+                self.summary.source = header.source_address.to_string();
+                self.summary.destination = header.destination_address.to_string();
+                self.summary.protocol = "IPv4".to_string();
+                self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
             }
             InternetLayer::IPv6(ref header) => {
-                source = header.source.to_string();
-                destination = header.destination.to_string();
-                protocol = "IPv4".to_string();
-                info = format!("{} is connecting to {}", source, destination);
+                self.summary.source = header.source.to_string();
+                self.summary.destination = header.destination.to_string();
+                self.summary.protocol = "IPv4".to_string();
+                self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
             }
             InternetLayer::Unknown => match &self.link_layer {
                 LinkLayer::Ethernet(ref header) => {
-                    source = header.source_mac.to_string();
-                    destination = header.destination_mac.to_string();
-                    info = format!("{} is connecting to {}", source, destination);
+                    self.summary.source = header.source_mac.to_string();
+                    self.summary.destination = header.destination_mac.to_string();
+                    self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
                 }
                 LinkLayer::Unknown => {}
             },
         }
         match &self.protocol_layer {
             ProtocolLayer::Tcp(ref header) => {
-                protocol = "TCP".to_string();
-                info = format!(
+                self.summary.protocol = "TCP".to_string();
+                self.summary.info = format!(
                     "{} is connecting to port {}",
                     header.source_port.to_string(),
                     header.destination_port.to_string()
                 );
             }
             ProtocolLayer::Udp(ref header) => {
-                protocol = "UDP".to_string();
-                info = format!(
+                self.summary.protocol = "UDP".to_string();
+                self.summary.info = format!(
                     "{} is connecting to port {}",
                     header.source_port.to_string(),
                     header.destination_port.to_string()
                 );
             }
             ProtocolLayer::Icmp(ref header) => {
-                protocol = "ICMP".to_string();
-                info = format!(
+                self.summary.protocol = "ICMP".to_string();
+                self.summary.info = format!(
                     "{} icmp code, {} icmp type",
                     header.icmp_code, header.icmp_type
                 )
             }
             ProtocolLayer::Unknown=>{}
         }
-
-        self.summary = Summary {
-            protocol,
-            source,
-            destination,
-            info,
-        };
         self
     }
 
