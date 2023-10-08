@@ -1,7 +1,7 @@
 use crate::layer_processors::internet_processor::InternetProcessor;
 use crate::layer_processors::link_processor::LinkProcessor;
 use crate::layer_processors::protocol_processor::TransportProcessor;
-use crate::packet_objects::layers::data::ApplicationLayer;
+use crate::packet_objects::layers::data::DataLayer;
 use crate::packet_objects::layers::internet::InternetLayer;
 use crate::packet_objects::layers::link::LinkLayer;
 use crate::packet_objects::layers::protocol::ProtocolLayer;
@@ -16,7 +16,7 @@ pub struct BasePacket {
     pub link_layer: LinkLayer,
     pub internet_layer: InternetLayer,
     pub protocol_layer: ProtocolLayer,
-    pub application_layer: Option<ApplicationLayer>,
+    pub application_layer: Option<DataLayer>,
     pub summary: Summary,
     pub packet_data: Vec<u8>,
 }
@@ -86,11 +86,13 @@ impl BasePacket {
                 source = header.source_address.to_string();
                 destination = header.destination_address.to_string();
                 protocol = "IPv4".to_string();
+                info = format!("{} is connecting to {}", source, destination);
             }
             InternetLayer::IPv6(ref header) => {
                 source = header.source.to_string();
                 destination = header.destination.to_string();
                 protocol = "IPv4".to_string();
+                info = format!("{} is connecting to {}", source, destination);
             }
             InternetLayer::Unknown => match &self.link_layer {
                 LinkLayer::Ethernet(ref header) => {
@@ -172,3 +174,4 @@ impl BasePacket {
         self
     }
 }
+

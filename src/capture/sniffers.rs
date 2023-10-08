@@ -11,12 +11,12 @@ for gui implementation
 #[derive(Debug, Clone, Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
-    pub captured_packets: Arc<Mutex<VecDeque<Vec<BasePacket>>>>,
+    pub captured_packets: Arc<Mutex<Vec<Vec<BasePacket>>>>,
     pub stop: Arc<AtomicBool>,
 }
 
 impl LiveCapture {
-    pub fn capture(&mut self) -> Result<(), String> {
+    pub fn capture(&mut self) {
         let stop = self.stop.clone();
         let vec_deque = self.captured_packets.clone();
         let mut vec_indexer = 0;
@@ -39,8 +39,8 @@ impl LiveCapture {
                         break;
                     }
                     if let Ok(mut buffer_lock) = vec_deque.lock() {
-                        if buffer_lock[vec_indexer].len() >= 1000 {
-                            buffer_lock.push_back(vec![]);
+                        if buffer_lock[buffer_lock.len() - 1].len() >= 1000 {
+                            buffer_lock.push(vec![]);
                             vec_indexer += 1;
                         }
                         buffer_lock[vec_indexer].push(BasePacket::new(index, packet.data.to_vec()));
@@ -51,7 +51,6 @@ impl LiveCapture {
                 drop(vec_deque);
             }
         });
-        Ok(())
     }
 
     pub fn stop(&mut self) {
