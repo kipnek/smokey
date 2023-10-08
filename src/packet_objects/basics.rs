@@ -1,7 +1,7 @@
 use crate::layer_processors::internet_processor::InternetProcessor;
 use crate::layer_processors::link_processor::LinkProcessor;
 use crate::layer_processors::protocol_processor::TransportProcessor;
-use crate::packet_objects::layers::application::ApplicationLayer;
+use crate::packet_objects::layers::data::ApplicationLayer;
 use crate::packet_objects::layers::internet::InternetLayer;
 use crate::packet_objects::layers::link::LinkLayer;
 use crate::packet_objects::layers::protocol::ProtocolLayer;
@@ -12,9 +12,9 @@ use serde::{Deserialize, Serialize};
 pub struct BasePacket {
     pub id: i32,
     pub date: String,
-    pub link_header: LinkLayer,
-    pub internet_header: InternetLayer,
-    pub protocol_header: ProtocolLayer,
+    pub link_layer: LinkLayer,
+    pub internet_layer: InternetLayer,
+    pub protocol_layer: ProtocolLayer,
     pub application_layer: Option<ApplicationLayer>,
     pub packet_data: Vec<u8>,
 }
@@ -39,9 +39,9 @@ impl BasePacket {
         BasePacket {
             id,
             date: chrono::offset::Local::now().to_string(),
-            link_header: LinkLayer::Unknown,
-            internet_header: InternetLayer::Unknown,
-            protocol_header: ProtocolLayer::Unknown,
+            link_layer: LinkLayer::Unknown,
+            internet_layer: InternetLayer::Unknown,
+            protocol_layer: ProtocolLayer::Unknown,
             application_layer: None,
             packet_data,
         }
@@ -61,16 +61,16 @@ impl BasePacket {
 
      */
     pub fn datalink_parse(&mut self) -> &mut Self {
-        self.link_header = LinkProcessor::link_process(&self.packet_data);
+        self.link_layer = LinkProcessor::link_process(&self.packet_data);
         self
     }
 
     pub fn network_parse(&mut self) -> &mut Self {
-        let header_trait: &dyn NextHeaderTrait = match &self.link_header {
+        let header_trait: &dyn NextHeaderTrait = match &self.link_layer {
             LinkLayer::Ethernet(header) => header,
             LinkLayer::Unknown => return self,
         };
-        self.internet_header = InternetProcessor::process_internet(
+        self.internet_layer = InternetProcessor::process_internet(
             header_trait.payload(),
             &header_trait.next_header(),
         );
@@ -78,12 +78,12 @@ impl BasePacket {
     }
 
     pub fn protocol_parse(&mut self) -> &mut Self {
-        let header_trait: &dyn NextHeaderTrait = match &self.internet_header {
+        let header_trait: &dyn NextHeaderTrait = match &self.internet_layer {
             InternetLayer::IPv4(ref header) => header,
             InternetLayer::IPv6(ref header) => header,
             InternetLayer::Unknown => return self,
         };
-        self.protocol_header = TransportProcessor::process_protocol(
+        self.protocol_layer = TransportProcessor::process_protocol(
             header_trait.payload(),
             &header_trait.next_header(),
         );

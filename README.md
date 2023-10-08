@@ -23,9 +23,10 @@ pub struct BasePacket {
 Each of these fields leads to
 
 ### Layers
-In the ```layers``` directory, there are enums that represent the layers of the TCP/IP stack. I chose this because it 
-more easily aligns with development. 
-each layer enum variant leads to 
+In the ```layers``` directory, there are enums that represent the layers of the TCP/IP stack (for the most part). 
+I chose this because it more easily aligns with development. I am omitting the transport layer and application layer.
+The transport layer is going to be handled by the "protocol_layer" and the application layer is going to be handled
+by the "data_layer". This is because of how pnet is set up and how it implements the traits.
 
 ### Headers
 Headers are the _packets_ themselves. Im thinking of further organizing packets into their perspective layers
