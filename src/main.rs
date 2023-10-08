@@ -4,7 +4,6 @@ mod packet_objects;
 mod traits;
 
 use std::{io, panic, thread};
-use std::collections::VecDeque;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::Ordering;
@@ -14,7 +13,6 @@ use crate::packet_objects::basics::BasePacket;
 
 fn main() {
     panic::set_hook(Box::new(custom_panic_handler));
-    let mut stop = false;
     let mut live = sniffers::LiveCapture{
         interfaces: vec![],
         captured_packets: Arc::new(Mutex::new(vec![vec![]])),
@@ -28,7 +26,7 @@ fn main() {
     loop {
         input.clear();  // Clear the previous input.
 
-        print!("Please enter something (or type 'stop' to exit): ");
+        print!("Please enter a random packet NUMBER (or type 'stop' to exit): ");
         io::stdout().flush().unwrap();
         io::stdin().read_line(&mut input).expect("Failed to read line");
         if input == "stop" {
