@@ -45,6 +45,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f30e7476521f6f8af1a1c4c0b8cc94f0bee37d91763d0ca2665f299b6cd8aec"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "cc"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -78,6 +84,7 @@ name = "cnote"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "ieee80211",
  "libwifi",
  "pcap",
  "pnet",
@@ -125,6 +132,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "eui48"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "887418ac5e8d57c2e66e04bdc2fe15f9a5407be20b54a82c86bd0e368b709701"
+dependencies = [
+ "regex",
+]
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -157,6 +173,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "ieee80211"
+version = "0.1.0"
+source = "git+https://github.com/SpiralP/rust-ieee80211.git?branch=master#628403b9b8a08177f405e4a3e74211ac9e8eefe6"
+dependencies = [
+ "byteorder",
+ "eui48",
 ]
 
 [[package]]

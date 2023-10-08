@@ -7,6 +7,7 @@ use crate::packet_objects::layers::link::LinkLayer;
 use crate::packet_objects::layers::protocol::ProtocolLayer;
 use crate::traits::NextHeaderTrait;
 use serde::{Deserialize, Serialize};
+use std::iter::Sum;
 
 #[derive(Debug, Clone)]
 pub struct BasePacket {
@@ -16,6 +17,7 @@ pub struct BasePacket {
     pub internet_layer: InternetLayer,
     pub protocol_layer: ProtocolLayer,
     pub application_layer: Option<ApplicationLayer>,
+    pub summary: Summary,
     pub packet_data: Vec<u8>,
 }
 
@@ -23,6 +25,14 @@ pub struct BasePacket {
 pub struct FieldType {
     pub field_name: String,
     pub num: u16,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Summary {
+    pub protocol: String,
+    pub source: String,
+    pub destination: String,
+    pub info: String,
 }
 
 /*
@@ -43,21 +53,92 @@ impl BasePacket {
             internet_layer: InternetLayer::Unknown,
             protocol_layer: ProtocolLayer::Unknown,
             application_layer: None,
+            summary: Summary {
+                protocol: "".to_string(),
+                source: "".to_string(),
+                destination: "".to_string(),
+                info: "".to_string(),
+            },
             packet_data,
         }
         .datalink_parse()
         .network_parse()
         .protocol_parse()
+        .set_summary()
         .to_owned()
     }
 
     /*
 
+    packet summary and other function associated with setting the summary
 
+     */
+
+    pub fn set_summary(&mut self) -> &mut Self {
+        let (mut source, mut destination, mut protocol, mut info) = (
+            "unknown".to_string(),
+            "unknown".to_string(),
+            "Unknown".to_string(),
+            "unknown".to_string(),
+        );
+        match self.internet_layer {
+            InternetLayer::IPv4(ref header) => {
+                source = header.source_address.to_string();
+                destination = header.destination_address.to_string();
+                protocol = "IPv4".to_string();
+            }
+            InternetLayer::IPv6(ref header) => {
+                source = header.source.to_string();
+                destination = header.destination.to_string();
+                protocol = "IPv4".to_string();
+            }
+            InternetLayer::Unknown => match &self.link_layer {
+                LinkLayer::Ethernet(ref header) => {
+                    source = header.source_mac.to_string();
+                    destination = header.destination_mac.to_string();
+                    info = format!("{} is connecting to {}", source, destination);
+                }
+                LinkLayer::Unknown => {}
+            },
+        }
+        match &self.protocol_layer {
+            ProtocolLayer::Tcp(ref header) => {
+                protocol = "TCP".to_string();
+                info = format!(
+                    "{} is connecting to port {}",
+                    header.source_port.to_string(),
+                    header.destination_port.to_string()
+                );
+            }
+            ProtocolLayer::Udp(ref header) => {
+                protocol = "UDP".to_string();
+                info = format!(
+                    "{} is connecting to port {}",
+                    header.source_port.to_string(),
+                    header.destination_port.to_string()
+                );
+            }
+            ProtocolLayer::Icmp(ref header) => {
+                protocol = "ICMP".to_string();
+                info = format!(
+                    "{} icmp code, {} icmp type",
+                    header.icmp_code, header.icmp_type
+                )
+            }
+        }
+
+        self.summary = Summary {
+            protocol,
+            source,
+            destination,
+            info,
+        };
+        self
+    }
+
+    /*
 
     parse layers
-
-
 
      */
     pub fn datalink_parse(&mut self) -> &mut Self {

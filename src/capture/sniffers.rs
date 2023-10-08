@@ -11,14 +11,14 @@ for gui implementation
 #[derive(Debug, Clone, Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
-    pub cli_buffer: Arc<Mutex<VecDeque<Vec<BasePacket>>>>,
+    pub captured_packets: Arc<Mutex<VecDeque<Vec<BasePacket>>>>,
     pub stop: Arc<AtomicBool>,
 }
 
 impl LiveCapture {
     pub fn capture(&mut self) -> Result<(), String> {
         let stop = self.stop.clone();
-        let cli_buffer = self.cli_buffer.clone();
+        let vec_deque = self.captured_packets.clone();
         let mut vec_indexer = 0;
         thread::spawn(move || {
             let mut index = 0;
@@ -38,17 +38,17 @@ impl LiveCapture {
                     if stop.load(Ordering::Relaxed) {
                         break;
                     }
-                    if let Ok(mut buffer_lock) = cli_buffer.lock() {
-                        if buffer_lock[vec_indexer].len() >= 1000{
+                    if let Ok(mut buffer_lock) = vec_deque.lock() {
+                        if buffer_lock[vec_indexer].len() >= 1000 {
                             buffer_lock.push_back(vec![]);
-                            vec_indexer+=1;
+                            vec_indexer += 1;
                         }
                         buffer_lock[vec_indexer].push(BasePacket::new(index, packet.data.to_vec()));
                         index += 1;
                     }
                 }
                 stop.store(false, Ordering::Release);
-                drop(cli_buffer);
+                drop(vec_deque);
             }
         });
         Ok(())

@@ -1,4 +1,4 @@
-use crate::packet_objects::headers::internet_headers::ip::{Ipv4Header};
+use crate::packet_objects::headers::internet_headers::ip::Ipv4Header;
 use crate::packet_objects::layers::internet::InternetLayer;
 use crate::traits::Processable;
 use pnet::packet::ipv4;
@@ -20,9 +20,7 @@ impl InternetProcessor {
                 //EtherType::Ipv6,
                 InternetLayer::Unknown
             }
-            _ => {
-               InternetLayer::Unknown
-            }
+            _ => InternetLayer::Unknown,
         }
     }
 }

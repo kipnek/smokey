@@ -1,5 +1,6 @@
-use crate::packet_objects::headers::protocol_headers::{tcp::TcpHeader,udp::UdpHeader,icmp::IcmpHeader};
-
+use crate::packet_objects::headers::protocol_headers::{
+    icmp::IcmpHeader, tcp::TcpHeader, udp::UdpHeader,
+};
 
 //can encompass things like icmp since the way pnet packet modules are set up
 #[derive(Debug, Clone)]
