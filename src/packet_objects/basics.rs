@@ -8,6 +8,10 @@ use crate::packet_objects::layers::protocol::ProtocolLayer;
 use crate::traits::NextHeaderTrait;
 use serde::{Deserialize, Serialize};
 use std::iter::Sum;
+use crate::packet_objects::headers::internet_headers::ip::{Ipv4Header, Ipv6Header};
+use crate::packet_objects::headers::protocol_headers::icmp::IcmpHeader;
+use crate::packet_objects::headers::protocol_headers::tcp::TcpHeader;
+use crate::packet_objects::headers::protocol_headers::udp::UdpHeader;
 
 #[derive(Debug, Clone)]
 pub struct BasePacket {
@@ -27,7 +31,7 @@ pub struct FieldType {
     pub num: u16,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Default)]
 pub struct Summary {
     pub protocol: String,
     pub source: String,
@@ -75,55 +79,82 @@ impl BasePacket {
      */
 
     pub fn set_summary(&mut self) -> &mut Self {
-        match self.internet_layer {
+        match &self.internet_layer.clone() {
             InternetLayer::IPv4(ref header) => {
-                self.summary.source = header.source_address.to_string();
-                self.summary.destination = header.destination_address.to_string();
-                self.summary.protocol = "IPv4".to_string();
-                self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
+                let summary = std::mem::replace(&mut self.summary, Default::default());
+                self.update_ipv4_summary(summary, header);
             }
             InternetLayer::IPv6(ref header) => {
-                self.summary.source = header.source.to_string();
-                self.summary.destination = header.destination.to_string();
-                self.summary.protocol = "IPv4".to_string();
-                self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
+                let summary = std::mem::replace(&mut self.summary, Default::default());
+                self.update_ipv6_summary(summary, header);
             }
-            InternetLayer::Unknown => match &self.link_layer {
-                LinkLayer::Ethernet(ref header) => {
-                    self.summary.source = header.source_mac.to_string();
-                    self.summary.destination = header.destination_mac.to_string();
-                    self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
-                }
-                LinkLayer::Unknown => {}
-            },
+            InternetLayer::Unknown => {
+                self.set_unknown_internet_summary();
+            }
         }
-        match &self.protocol_layer {
+
+        match &self.protocol_layer.clone() {
             ProtocolLayer::Tcp(ref header) => {
-                self.summary.protocol = "TCP".to_string();
-                self.summary.info = format!(
-                    "{} is connecting to port {}",
-                    header.source_port.to_string(),
-                    header.destination_port.to_string()
-                );
+                let summary = std::mem::replace(&mut self.summary, Default::default());
+                self.update_tcp_summary(summary, header);
             }
             ProtocolLayer::Udp(ref header) => {
-                self.summary.protocol = "UDP".to_string();
-                self.summary.info = format!(
-                    "{} is connecting to port {}",
-                    header.source_port.to_string(),
-                    header.destination_port.to_string()
-                );
+                let summary = std::mem::replace(&mut self.summary, Default::default());
+                self.update_udp_summary(summary, header);
             }
             ProtocolLayer::Icmp(ref header) => {
-                self.summary.protocol = "ICMP".to_string();
-                self.summary.info = format!(
-                    "{} icmp code, {} icmp type",
-                    header.icmp_code, header.icmp_type
-                )
+                let summary = std::mem::replace(&mut self.summary, Default::default());
+                self.update_icmp_summary(summary, header);
             }
-            ProtocolLayer::Unknown=>{}
+            ProtocolLayer::Unknown => {}
         }
+
         self
+    }
+
+    fn update_ipv4_summary(&mut self, mut summary: Summary, header: &Ipv4Header) {
+        summary.protocol = "IPv4".to_string();
+        summary.source = header.source_address.to_string();
+        summary.destination = header.destination_address.to_string();
+        summary.info = format!("{} is connecting to {}", summary.source, summary.destination);
+        self.summary = summary;
+    }
+
+    fn update_ipv6_summary(&mut self, mut summary: Summary, header: &Ipv6Header) {
+        summary.protocol = "IPv6".to_string();
+        summary.source = header.source.to_string();
+        summary.destination = header.destination.to_string();
+        summary.info = format!("{} is connecting to {}", summary.source, summary.destination);
+        self.summary = summary;
+    }
+
+    fn set_unknown_internet_summary(&mut self) {
+        match &self.link_layer {
+            LinkLayer::Ethernet(ref header) => {
+                self.summary.source = header.source_mac.to_string();
+                self.summary.destination = header.destination_mac.to_string();
+                self.summary.info = format!("{} is connecting to {}", self.summary.source, self.summary.destination);
+            }
+            LinkLayer::Unknown => {}
+        }
+    }
+
+    fn update_tcp_summary(&mut self, mut summary: Summary, header: &TcpHeader) {
+        summary.protocol = "TCP".to_string();
+        summary.info = format!("{} is connecting to port {}", header.source_port, header.destination_port);
+        self.summary = summary;
+    }
+
+    fn update_udp_summary(&mut self, mut summary: Summary, header: &UdpHeader) {
+        summary.protocol = "UDP".to_string();
+        summary.info = format!("{} is connecting to port {}", header.source_port, header.destination_port);
+        self.summary = summary;
+    }
+
+    fn update_icmp_summary(&mut self, mut summary: Summary, header: &IcmpHeader) {
+        summary.protocol = "ICMP".to_string();
+        summary.info = format!("{} icmp code, {} icmp type", header.icmp_code, header.icmp_type);
+        self.summary = summary;
     }
 
     /*
