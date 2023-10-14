@@ -35,7 +35,7 @@ pub struct Ipv4Flags {
     morefrag: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
@@ -64,8 +64,12 @@ impl Layer for Ipv4Packet {
 
         let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.num.clone() {
             6 => Some(Box::new(parse_tcp(&packet_header.payload))),
-            17 => Some(Box::new(parse_udp(&packet_header.payload))),
-            _ => None,
+            17 => {
+                Some(Box::new(parse_udp(&packet_header.payload)))
+            },
+            _ => {
+                None
+            },
         };
 
         self.header = packet_header;
@@ -120,6 +124,10 @@ impl Layer for Ipv4Packet {
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
         map
+    }
+
+    fn get_next(&self) -> &Option<Box<dyn Layer>> {
+        &self.payload
     }
 }
 

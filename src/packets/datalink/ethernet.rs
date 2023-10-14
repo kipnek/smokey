@@ -6,7 +6,7 @@ use pnet::packet::Packet;
 use std::collections::HashMap;
 use std::default::Default;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct EthernetHeader {
     pub source_mac: String,
     pub destination_mac: String,
@@ -39,7 +39,7 @@ impl EthernetHeader {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct EthernetFrame {
     pub id: i32,
     pub header: EthernetHeader,
@@ -47,7 +47,7 @@ pub struct EthernetFrame {
 }
 
 impl Layer for EthernetFrame {
-     fn deserialize(&mut self, packet: &[u8]) {
+    fn deserialize(&mut self, packet: &[u8]) {
         let packet_header: EthernetHeader = match EthernetPacket::new(packet) {
             None => EthernetHeader::malformed(packet),
             Some(header) => EthernetHeader {
@@ -85,6 +85,10 @@ impl Layer for EthernetFrame {
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
         map
+    }
+
+    fn get_next(&self) -> &Option<Box<dyn Layer>> {
+        &self.payload
     }
 }
 

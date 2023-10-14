@@ -12,7 +12,7 @@ pub struct UdpHeader {
     pub malformed: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct UdpPacket {
     pub header: UdpHeader,
     pub payload: Option<Box<dyn Layer>>,
@@ -31,6 +31,8 @@ impl Layer for UdpPacket {
                 malformed: false,
             },
         };
+        self.header = packet_header;
+        self.payload = None;
     }
 
     fn get_summary(&self) -> HashMap<String, String> {
@@ -49,6 +51,10 @@ impl Layer for UdpPacket {
         map.insert("malformed".to_string(), self.header.malformed.to_string());
 
         map
+    }
+
+    fn get_next(&self) -> &Option<Box<dyn Layer>> {
+        &self.payload
     }
 }
 

@@ -27,7 +27,7 @@ pub struct TcpFlags {
     fin: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TcpPacket {
     pub header: TcpHeader,
     pub payload: Option<Box<dyn Layer>>,
@@ -93,6 +93,10 @@ impl Layer for TcpPacket {
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
         map
+    }
+
+    fn get_next(&self) -> &Option<Box<dyn Layer>> {
+        &self.payload
     }
 }
 
