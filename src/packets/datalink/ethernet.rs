@@ -71,6 +71,7 @@ impl Layer for EthernetFrame {
 
     fn get_summary(&self) -> HashMap<String, String> {
         let mut map: HashMap<String, String> = HashMap::new();
+        map.insert("protocol".to_string(), "ethernet".to_string());
         map.insert("Source Mac".to_string(), self.header.source_mac.to_string());
         map.insert(
             "Destination Mac".to_string(),

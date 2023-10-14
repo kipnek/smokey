@@ -55,6 +55,7 @@ impl Layer for TcpPacket {
 
     fn get_summary(&self) -> HashMap<String, String> {
         let mut map: HashMap<String, String> = HashMap::new();
+        map.insert("protocol".to_string(), "tcp".to_string());
         map.insert(
             "source_port".to_string(),
             self.header.source_port.to_string(),

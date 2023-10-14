@@ -78,6 +78,7 @@ impl Layer for Ipv4Packet {
 
     fn get_summary(&self) -> HashMap<String, String> {
         let mut map: HashMap<String, String> = HashMap::new();
+        map.insert("protocol".to_string(), "ipv4".to_string());
         map.insert("version".to_string(), self.header.version_ihl.to_string());
         map.insert("dscp_ecn".to_string(), self.header.dscp_ecn.to_string());
         map.insert(

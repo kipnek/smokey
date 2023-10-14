@@ -8,6 +8,7 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::{io, panic, thread};
+use std::collections::HashMap;
 
 fn main() {
     panic::set_hook(Box::new(custom_panic_handler));
@@ -38,17 +39,15 @@ fn main() {
             if let Some((outside, inside)) = find_id(&lock, trimmed_input) {
                 let layer_obj: &dyn Layer = &lock[outside][inside];
                 let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(layer_obj));
-
+                let mut layer_vector:Vec<HashMap<String,String>> = vec![];
                 while let Some(layer) = &current_layer {
-                    if layer.get_next().is_none() {
-                        break;
-                    }
+                    layer_vector.push(layer.get_summary());
                     current_layer = layer
                         .get_next()
                         .as_ref()
                         .map(|boxed_layer| Box::new(boxed_layer.as_ref() as &dyn Layer));
                 }
-                println!("{:?}", current_layer);
+                println!("{:?}", layer_vector.last());
             }
         }
     }
