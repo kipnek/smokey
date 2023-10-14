@@ -4,17 +4,15 @@ mod traits;
 
 use crate::packets::datalink::ethernet::EthernetFrame;
 use crate::traits::Layer;
+use std::collections::HashMap;
 use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::{io, panic, thread};
-use std::collections::HashMap;
-use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::transport::udp::UdpPacket;
 
 fn main() {
     panic::set_hook(Box::new(custom_panic_handler));
-    let mut live = sniffer::LiveCapture {
+    let live = sniffer::LiveCapture {
         interfaces: vec![],
         captured_packets: Arc::new(Mutex::new(vec![vec![]])),
         stop: Arc::new(Default::default()),
@@ -41,7 +39,7 @@ fn main() {
             if let Some((outside, inside)) = find_id(&lock, trimmed_input) {
                 let layer_obj: &dyn Layer = &lock[outside][inside];
                 let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(layer_obj));
-                let mut layer_vector:Vec<HashMap<String,String>> = vec![];
+                let mut layer_vector: Vec<HashMap<String, String>> = vec![];
                 while let Some(layer) = &current_layer {
                     layer_vector.push(layer.get_summary());
                     current_layer = layer
@@ -60,7 +58,7 @@ fn custom_panic_handler(info: &panic::PanicInfo) {
     println!("Panic occurred: {:?}", info);
 }
 
-fn find_id(vectors: &Vec<Vec<EthernetFrame>>, id_to_find: i32) -> Option<(usize, usize)> {
+fn find_id(vectors: &[Vec<EthernetFrame>], id_to_find: i32) -> Option<(usize, usize)> {
     vectors.iter().enumerate().find_map(|(i, vector)| {
         vector
             .iter()
@@ -69,6 +67,14 @@ fn find_id(vectors: &Vec<Vec<EthernetFrame>>, id_to_find: i32) -> Option<(usize,
     })
 }
 
+/*
 fn find_udp_packets(frames: &[EthernetFrame]) -> Vec<&EthernetFrame> {
-    frames.iter().filter(|&frame| frame.is_udp_packet()).collect()
+    //frames.iter().filter(|&frame| frame.is_udp_packet()).collect()
+}
+ */
+fn get_innermost_info(layer: &dyn Layer) -> String {
+    match layer.get_next() {
+        Some(next) => get_innermost_info(next.as_ref()),
+        None => layer.info(),
+    }
 }

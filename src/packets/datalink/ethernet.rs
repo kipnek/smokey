@@ -1,7 +1,7 @@
 use crate::packets::internet::ip::Ipv4Packet;
 use crate::packets::shared_structs::{FieldType, ProtocolType};
 use crate::traits::Layer;
-use pnet::packet::ethernet::{EtherType, EthernetPacket};
+use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
 use std::collections::HashMap;
 use std::default::Default;
@@ -94,6 +94,21 @@ impl Layer for EthernetFrame {
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Ethernet
     }
+
+    fn source(&self) -> String {
+        self.header.source_mac.to_string()
+    }
+
+    fn destination(&self) -> String {
+        self.header.destination_mac.to_string()
+    }
+
+    fn info(&self) -> String {
+        format!(
+            "next header {}, with number {}",
+            self.header.ether_type.field_name, self.header.ether_type.num
+        )
+    }
 }
 
 impl EthernetFrame {
@@ -112,21 +127,6 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
     packet.deserialize(payload);
     packet
 }
-
-/*
-
-looping to get layer
-
-let mut current_layer: Option<&dyn Layer> = Some(initial_packet);
-while let Some(layer) = current_layer {
-    // Process the current layer
-    // ...
-
-    // Move to the next layer
-    current_layer = layer.get_next_layer();
-}
-
- */
 
 /*
 

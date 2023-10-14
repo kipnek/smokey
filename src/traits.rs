@@ -1,7 +1,6 @@
-use std::any::Any;
+use crate::packets::shared_structs::ProtocolType;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use crate::packets::shared_structs::ProtocolType;
 
 pub trait Layer: Send + Debug {
     fn deserialize(&mut self, packet: &[u8]);
@@ -12,6 +11,13 @@ pub trait Layer: Send + Debug {
 
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Unknown // or a suitable default
+    }
+
+    fn source(&self) -> String;
+    fn destination(&self) -> String;
+
+    fn info(&self) -> String {
+        "Unknown protocol, info not available".to_string()
     }
 }
 

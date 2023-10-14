@@ -2,7 +2,9 @@ use crate::packets::shared_structs::{FieldType, ProtocolType};
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
 use crate::traits::Layer;
+use pnet::packet::ipv4::Ipv4OptionIterable;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 
 /*
 
@@ -11,12 +13,14 @@ IPV4
 
 
  */
-#[derive(Debug, Clone, Default)]
+#[derive(Default, Debug)]
 pub struct Ipv4Header {
     pub version_ihl: u8,
-    pub dscp_ecn: u8,
+    pub dscp: u8,
+    pub ecn: u8,
     pub total_length: u16,
     pub identification: u16,
+    pub options: Vec<Ipv4Options>,
     pub flags_fragment_offset: u16,
     pub time_to_live: u8,
     pub header_checksum: u16,
@@ -28,17 +32,37 @@ pub struct Ipv4Header {
     pub malformed: bool,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Ipv4Flags {
     reserved: bool,
     dontfrag: bool,
     morefrag: bool,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
+}
+
+#[derive(Clone, Debug)]
+pub enum Ipv4Options {
+    Eol,
+    Nop,
+    Lsrr,
+    Ssrr,
+    Rr,
+    Timestamp,
+    Unknown(String),
+}
+
+impl Debug for Ipv4Packet {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Ipv4Packet")
+            .field("header", &self.header)
+            .field("payload", &self.payload)
+            .finish()
+    }
 }
 
 impl Layer for Ipv4Packet {
@@ -47,9 +71,11 @@ impl Layer for Ipv4Packet {
             None => Ipv4Header::malformed(packet),
             Some(header) => Ipv4Header {
                 version_ihl: header.get_version(),
-                dscp_ecn: header.get_dscp(),
+                dscp: header.get_dscp(),
+                ecn: header.get_ecn(),
                 total_length: header.get_total_length(),
                 identification: header.get_total_length(),
+                options: Ipv4Header::set_options(header.get_options_iter()),
                 flags_fragment_offset: header.get_fragment_offset(),
                 time_to_live: header.get_ttl(),
                 header_checksum: header.get_checksum(),
@@ -64,12 +90,8 @@ impl Layer for Ipv4Packet {
 
         let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.num {
             6 => Some(Box::new(parse_tcp(&packet_header.payload))),
-            17 => {
-                Some(Box::new(parse_udp(&packet_header.payload)))
-            },
-            _ => {
-                None
-            },
+            17 => Some(Box::new(parse_udp(&packet_header.payload))),
+            _ => None,
         };
 
         self.header = packet_header;
@@ -78,9 +100,19 @@ impl Layer for Ipv4Packet {
 
     fn get_summary(&self) -> HashMap<String, String> {
         let mut map: HashMap<String, String> = HashMap::new();
+
+        let options_string = self
+            .header
+            .options
+            .iter()
+            .map(|option| option.description())
+            .collect::<Vec<&str>>()
+            .join("\n");
+
         map.insert("protocol".to_string(), "ipv4".to_string());
         map.insert("version".to_string(), self.header.version_ihl.to_string());
-        map.insert("dscp_ecn".to_string(), self.header.dscp_ecn.to_string());
+        map.insert("dscp".to_string(), self.header.dscp.to_string());
+        map.insert("ecn".to_string(), self.header.ecn.to_string());
         map.insert(
             "total_length".to_string(),
             self.header.total_length.to_string(),
@@ -124,6 +156,7 @@ impl Layer for Ipv4Packet {
             ),
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
+        map.insert("options".to_string(), options_string);
         map
     }
 
@@ -134,15 +167,35 @@ impl Layer for Ipv4Packet {
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Ipv4
     }
+
+    fn source(&self) -> String {
+        self.header.source_address.clone()
+    }
+
+    fn destination(&self) -> String {
+        self.header.destination_address.clone()
+    }
+
+    fn info(&self) -> String {
+        format!(
+            "malformed {}, flags: MoreFrag: {} DontFrag: {} Reserved: {}",
+            self.header.malformed,
+            self.header.flags.morefrag,
+            self.header.flags.dontfrag,
+            self.header.flags.reserved
+        )
+    }
 }
 
 impl Ipv4Header {
     pub fn malformed(packet: &[u8]) -> Ipv4Header {
         Ipv4Header {
             version_ihl: 4,
-            dscp_ecn: 0,
+            dscp: 0,
+            ecn: 0,
             total_length: 0,
             identification: 0,
+            options: vec![],
             flags_fragment_offset: 0,
             time_to_live: 0,
             header_checksum: 0,
@@ -163,6 +216,62 @@ impl Ipv4Header {
             reserved: (number & 0b100) != 0,
             dontfrag: (number & 0b010) != 0,
             morefrag: (number & 0b001) != 0,
+        }
+    }
+
+    pub fn set_options(options: Ipv4OptionIterable) -> Vec<Ipv4Options> {
+        let mut results = vec![];
+        for option in options {
+            match option.get_number().0 {
+                0x00 => {
+                    // End of Options List
+                    results.push(Ipv4Options::Eol);
+                }
+                0x01 => {
+                    // No Operation
+                    results.push(Ipv4Options::Nop);
+                }
+                0x83 => {
+                    // Loose Source and Record Route
+                    results.push(Ipv4Options::Lsrr);
+                }
+                0x89 => {
+                    // Strict Source and Record Route
+                    results.push(Ipv4Options::Ssrr);
+                }
+                0x07 => {
+                    // Record Route
+                    results.push(Ipv4Options::Rr);
+                }
+                0x44 => {
+                    // Timestamp
+                    results.push(Ipv4Options::Timestamp);
+                }
+                // ... add other options as needed
+                _ => {
+                    results.push(Ipv4Options::Unknown(format!(
+                        "Unknown Option: {:#X}",
+                        option.get_number().0
+                    )));
+                }
+            }
+        }
+        results
+    }
+}
+
+
+
+impl Ipv4Options {
+    fn description(&self) -> &str {
+        match self {
+            Ipv4Options::Eol => "End of Options List",
+            Ipv4Options::Nop => "No Operation",
+            Ipv4Options::Lsrr => "Loose Source and Record Route",
+            Ipv4Options::Ssrr => "Strict Source and Record Route",
+            Ipv4Options::Rr => "Record Route",
+            Ipv4Options::Timestamp => "Timestamp",
+            Ipv4Options::Unknown(desc) => desc,
         }
     }
 }

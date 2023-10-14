@@ -1,7 +1,7 @@
+use crate::packets::shared_structs::ProtocolType;
 use crate::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
-use crate::packets::shared_structs::ProtocolType;
 
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
@@ -88,11 +88,11 @@ impl Layer for TcpPacket {
             "flags".to_string(),
             format!(
                 "ack : {}, psh : {}, rst : {}, syn : {}, fin : {}",
-                self.header.flags.ack.to_string(),
-                self.header.flags.psh.to_string(),
-                self.header.flags.rst.to_string(),
-                self.header.flags.syn.to_string(),
-                self.header.flags.fin.to_string(),
+                self.header.flags.ack as u8,
+                self.header.flags.psh as u8,
+                self.header.flags.rst as u8,
+                self.header.flags.syn as u8,
+                self.header.flags.fin as u8,
             ),
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
@@ -104,6 +104,21 @@ impl Layer for TcpPacket {
     }
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Tcp
+    }
+
+    fn source(&self) -> String {
+        self.header.source_port.to_string()
+    }
+
+    fn destination(&self) -> String {
+        self.header.destination_port.to_string()
+    }
+
+    fn info(&self) -> String {
+        format!(
+            "TCP Source Port {} -> Destination {}",
+            self.header.source_port, self.header.destination_port
+        )
     }
 }
 

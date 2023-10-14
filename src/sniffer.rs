@@ -1,6 +1,5 @@
 use crate::packets::datalink::ethernet::EthernetFrame;
 use pcap::Device;
-use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};

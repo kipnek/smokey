@@ -1,7 +1,7 @@
+use crate::packets::shared_structs::ProtocolType;
 use crate::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
-use crate::packets::shared_structs::ProtocolType;
 
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
@@ -60,6 +60,20 @@ impl Layer for UdpPacket {
 
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Udp
+    }
+
+    fn source(&self) -> String {
+        self.header.source_port.to_string()
+    }
+
+    fn destination(&self) -> String {
+        self.header.destination_port.to_string()
+    }
+
+    fn info(&self) -> String {
+        format!("UDP Source Port {} -> Destination {}",
+        self.header.source_port, self.header.destination_port
+        )
     }
 }
 
