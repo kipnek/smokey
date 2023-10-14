@@ -1,5 +1,5 @@
 use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::shared_structs::{FieldType, ProtocolType};
+use crate::packets::shared_structs::{Description, FieldType, ProtocolType};
 use crate::traits::{Describable, Layer};
 use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
@@ -39,14 +39,6 @@ impl EthernetHeader {
         }
     }
 
-}
-#[derive(Default, Debug)]
-pub struct Description {
-    pub id : i32,
-    pub timestamp : String,
-    pub source: String,
-    pub destination: String,
-    pub info : String
 }
 #[derive(Default, Debug)]
 pub struct EthernetFrame {
@@ -142,16 +134,17 @@ impl Describable for EthernetFrame{
             (payload.source(), payload.destination())
         };
 
-        let info = if let Some(payload) = self.payload.as_ref() {
+        let (protocol, info) = if let Some(payload) = self.payload.as_ref() {
             get_innermost_info(payload.as_ref())
         } else {
-            self.info()
+            (ProtocolType::Ethernet, self.info())
         };
 
 
         Description {
             id: self.id,
             timestamp: self.timestamp.clone(),
+            protocol,
             source,
             destination,
             info,
@@ -173,10 +166,10 @@ impl Describable for EthernetFrame{
     }
 }
 
-fn get_innermost_info(layer: &dyn Layer) -> String {
+fn get_innermost_info(layer: &dyn Layer) -> (ProtocolType, String) {
     match layer.get_next() {
         Some(next) => get_innermost_info(next.as_ref()),
-        None => layer.info(),
+        None => (layer.protocol_type(), layer.info())
     }
 }
 

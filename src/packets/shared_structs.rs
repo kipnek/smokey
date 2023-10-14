@@ -4,12 +4,22 @@ pub struct FieldType {
     pub num: u16,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug)]
 pub struct Summary {
-    pub protocol: String,
+    pub protocol: ProtocolType,
     pub source: String,
     pub destination: String,
     pub info: String,
+}
+
+#[derive(Debug)]
+pub struct Description {
+    pub id : i32,
+    pub timestamp : String,
+    pub protocol : ProtocolType,
+    pub source: String,
+    pub destination: String,
+    pub info : String
 }
 
 #[derive(Debug, PartialEq, Eq)]

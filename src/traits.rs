@@ -1,7 +1,7 @@
-use crate::packets::shared_structs::ProtocolType;
+use crate::packets::shared_structs::{ProtocolType, Description};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use crate::packets::datalink::ethernet::Description;
+
 
 pub trait Layer: Send + Debug {
     fn deserialize(&mut self, packet: &[u8]);
