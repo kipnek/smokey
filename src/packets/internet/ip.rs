@@ -62,7 +62,7 @@ impl Layer for Ipv4Packet {
             },
         };
 
-        let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.num.clone() {
+        let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.num {
             6 => Some(Box::new(parse_tcp(&packet_header.payload))),
             17 => {
                 Some(Box::new(parse_udp(&packet_header.payload)))
@@ -203,7 +203,7 @@ fn set_next_header(number: u8) -> FieldType {
             //ipv6
             "IPv6".to_string()
         }
-        _ => "n/a".to_string(),
+        _ => "Unknown".to_string(),
     };
 
     FieldType {

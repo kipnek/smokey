@@ -26,3 +26,6 @@ Every packet implements the layer trait, layer implements the ```Send``` marker
 Sniffers are the packet capture logic. 
 
 This is just a rough outline for anyone who reads this/myself so i know what im doing.
+
+
+Each packet that implements layer handles the logic for the layer it encapsulate.

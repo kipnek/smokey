@@ -52,6 +52,8 @@ impl Layer for TcpPacket {
                 malformed: false,
             },
         };
+        self.header = header;
+        self.payload = None;
     }
 
     fn get_summary(&self) -> HashMap<String, String> {
