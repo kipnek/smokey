@@ -5,6 +5,7 @@ use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
 use std::collections::HashMap;
 use std::default::Default;
+use chrono::Utc;
 
 #[derive(Default, Clone, Debug)]
 pub struct EthernetHeader {
@@ -37,11 +38,20 @@ impl EthernetHeader {
             malformed: true,
         }
     }
-}
 
+}
+#[derive(Default, Debug)]
+pub struct Description {
+    pub id : i32,
+    pub timestamp : String,
+    pub source: String,
+    pub destination: String,
+    pub info : String
+}
 #[derive(Default, Debug)]
 pub struct EthernetFrame {
     pub id: i32,
+    pub timestamp :String,
     pub header: EthernetHeader,
     pub payload: Option<Box<dyn Layer>>,
 }
@@ -115,10 +125,42 @@ impl EthernetFrame {
     pub fn new(id: i32, packet: &[u8]) -> Self {
         let mut frame = EthernetFrame {
             id,
+            timestamp : Utc::now().to_string(),
             ..Default::default()
         };
         frame.deserialize(packet);
         frame
+    }
+    pub fn get_description(&self) -> Description {
+
+        let (source, destination) = if self.payload.as_ref().is_none(){
+            (self.header.source_mac.clone(), self.header.destination_mac.clone())
+        }else{
+            let payload = self.payload.as_ref().unwrap();
+            (payload.source(), payload.destination())
+        };
+
+        let info = if let Some(payload) = self.payload.as_ref() {
+            get_innermost_info(payload.as_ref())
+        } else {
+            self.info()
+        };
+
+
+        Description {
+            id: self.id,
+            timestamp: self.timestamp.clone(),
+            source,
+            destination,
+            info,
+        }
+    }
+}
+
+fn get_innermost_info(layer: &dyn Layer) -> String {
+    match layer.get_next() {
+        Some(next) => get_innermost_info(next.as_ref()),
+        None => layer.info(),
     }
 }
 

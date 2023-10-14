@@ -9,6 +9,8 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::{io, panic, thread};
+use chrono::{DateTime, Utc};
+use chrono::Duration;
 
 fn main() {
     panic::set_hook(Box::new(custom_panic_handler));
@@ -37,17 +39,8 @@ fn main() {
         let trimmed_input: i32 = input.trim().parse::<i32>().unwrap();
         if let Ok(lock) = live.captured_packets.lock() {
             if let Some((outside, inside)) = find_id(&lock, trimmed_input) {
-                let layer_obj: &dyn Layer = &lock[outside][inside];
-                let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(layer_obj));
-                let mut layer_vector: Vec<HashMap<String, String>> = vec![];
-                while let Some(layer) = &current_layer {
-                    layer_vector.push(layer.get_summary());
-                    current_layer = layer
-                        .get_next()
-                        .as_ref()
-                        .map(|boxed_layer| Box::new(boxed_layer.as_ref() as &dyn Layer));
-                }
-                println!("{:?}", layer_vector.last());
+                let layer_obj: &EthernetFrame = &lock[outside][inside];
+                println!("{:?}", layer_obj.get_description())
             }
         }
     }
@@ -72,9 +65,13 @@ fn find_udp_packets(frames: &[EthernetFrame]) -> Vec<&EthernetFrame> {
     //frames.iter().filter(|&frame| frame.is_udp_packet()).collect()
 }
  */
-fn get_innermost_info(layer: &dyn Layer) -> String {
-    match layer.get_next() {
-        Some(next) => get_innermost_info(next.as_ref()),
-        None => layer.info(),
+fn get_duration_from_string(timestamp: &str) -> Option<Duration> {
+    let parsed_time = timestamp.parse::<DateTime<Utc>>();
+    match parsed_time {
+        Ok(time) => {
+            let now = Utc::now();
+            Some(now.signed_duration_since(time))
+        },
+        Err(_) => None
     }
 }
