@@ -3,8 +3,7 @@ mod sniffer;
 mod traits;
 
 use crate::packets::datalink::ethernet::EthernetFrame;
-use crate::traits::{Describable, Layer};
-use std::collections::HashMap;
+use crate::traits::Describable;
 use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};

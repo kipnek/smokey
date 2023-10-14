@@ -131,30 +131,6 @@ impl EthernetFrame {
         frame.deserialize(packet);
         frame
     }
-    /*pub fn get_description(&self) -> Description {
-
-        let (source, destination) = if self.payload.as_ref().is_none(){
-            (self.header.source_mac.clone(), self.header.destination_mac.clone())
-        }else{
-            let payload = self.payload.as_ref().unwrap();
-            (payload.source(), payload.destination())
-        };
-
-        let info = if let Some(payload) = self.payload.as_ref() {
-            get_innermost_info(payload.as_ref())
-        } else {
-            self.info()
-        };
-
-
-        Description {
-            id: self.id,
-            timestamp: self.timestamp.clone(),
-            source,
-            destination,
-            info,
-        }
-    }*/
 }
 
 impl Describable for EthernetFrame{
