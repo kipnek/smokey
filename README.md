@@ -8,31 +8,19 @@ lot of refactoring coming up too after this refactoring.
 
 ## How it works
 
-### Basic Object
-This is the basic packet. Since we wont always have all layers, each field is an option. The link layer may change
+### base frame
 ```rust
-pub struct BasePacket {
+#[derive(Default)]
+pub struct EthernetFrame {
     pub id: i32,
-    pub date: String,
-    pub link_header: Option<LinkLayer>,
-    pub internet_header: Option<InternetLayer>,
-    pub transport_header: Option<TransportLayer>,
-    pub packet_data: Vec<u8>,
+    pub header: EthernetHeader,
+    pub payload: Option<Box<dyn Layer>>,
 }
 ```
-Each of these fields leads to
+Layer is a trait object that gets implemented further down the line.
 
 ### Layers
-In the ```layers``` directory, there are enums that represent the layers of the TCP/IP stack (for the most part). 
-I chose this because it more easily aligns with development. I am omitting the transport layer and application layer.
-The transport layer is going to be handled by the "protocol_layer" and the application layer is going to be handled
-by the "data_layer". This is because of how pnet is set up and how it implements the traits.
-
-### Headers
-Headers are the _packets_ themselves. Im thinking of further organizing packets into their perspective layers
-
-### Layer Processors
-_Layer Processors_ are the logic behind choosing which header gets built or _processed_
+Every packet implements the layer trait, layer implements the ```Send``` marker
 
 ### Sniffers
 Sniffers are the packet capture logic. 
