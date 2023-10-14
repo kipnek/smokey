@@ -3,7 +3,7 @@ mod sniffer;
 mod traits;
 
 use crate::packets::datalink::ethernet::EthernetFrame;
-use crate::traits::Layer;
+use crate::traits::{Describable, Layer};
 use std::collections::HashMap;
 use std::io::Write;
 use std::sync::atomic::Ordering;
@@ -39,8 +39,9 @@ fn main() {
         let trimmed_input: i32 = input.trim().parse::<i32>().unwrap();
         if let Ok(lock) = live.captured_packets.lock() {
             if let Some((outside, inside)) = find_id(&lock, trimmed_input) {
-                let layer_obj: &EthernetFrame = &lock[outside][inside];
-                println!("{:?}", layer_obj.get_description())
+                let layer_obj: &dyn Describable = &lock[outside][inside];
+                println!("{:?}", layer_obj.get_description());
+                println!("{:?}", layer_obj.get_all())
             }
         }
     }

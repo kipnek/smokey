@@ -1,6 +1,6 @@
 use crate::packets::internet::ip::Ipv4Packet;
 use crate::packets::shared_structs::{FieldType, ProtocolType};
-use crate::traits::Layer;
+use crate::traits::{Describable, Layer};
 use pnet::packet::ethernet::EthernetPacket;
 use pnet::packet::Packet;
 use std::collections::HashMap;
@@ -131,7 +131,7 @@ impl EthernetFrame {
         frame.deserialize(packet);
         frame
     }
-    pub fn get_description(&self) -> Description {
+    /*pub fn get_description(&self) -> Description {
 
         let (source, destination) = if self.payload.as_ref().is_none(){
             (self.header.source_mac.clone(), self.header.destination_mac.clone())
@@ -154,6 +154,46 @@ impl EthernetFrame {
             destination,
             info,
         }
+    }*/
+}
+
+impl Describable for EthernetFrame{
+    fn get_description(&self) -> Description {
+        let (source, destination) = if self.payload.as_ref().is_none(){
+            (self.header.source_mac.clone(), self.header.destination_mac.clone())
+        }else{
+            let payload = self.payload.as_ref().unwrap();
+            (payload.source(), payload.destination())
+        };
+
+        let info = if let Some(payload) = self.payload.as_ref() {
+            get_innermost_info(payload.as_ref())
+        } else {
+            self.info()
+        };
+
+
+        Description {
+            id: self.id,
+            timestamp: self.timestamp.clone(),
+            source,
+            destination,
+            info,
+        }
+    }
+
+    fn get_all(&self) -> Vec<HashMap<String, String>> {
+        let mut vec_map = vec![self.get_summary()];
+        let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(self));
+        while let Some(layer) = &current_layer {
+            vec_map.push(layer.get_summary());
+            current_layer = layer
+                .get_next()
+                .as_ref()
+                .map(|boxed_layer| Box::new(boxed_layer.as_ref() as &dyn Layer));
+        }
+
+        vec_map
     }
 }
 

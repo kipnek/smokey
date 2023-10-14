@@ -1,6 +1,7 @@
 use crate::packets::shared_structs::ProtocolType;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use crate::packets::datalink::ethernet::Description;
 
 pub trait Layer: Send + Debug {
     fn deserialize(&mut self, packet: &[u8]);
@@ -19,6 +20,12 @@ pub trait Layer: Send + Debug {
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_string()
     }
+}
+
+pub trait Describable: Send + Debug + Layer {
+    fn get_description(&self) -> Description;
+
+    fn get_all(&self) -> Vec<HashMap<String, String>>;
 }
 
 /*
