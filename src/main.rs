@@ -9,6 +9,8 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::{io, panic, thread};
 use std::collections::HashMap;
+use crate::packets::internet::ip::Ipv4Packet;
+use crate::packets::transport::udp::UdpPacket;
 
 fn main() {
     panic::set_hook(Box::new(custom_panic_handler));
@@ -65,4 +67,8 @@ fn find_id(vectors: &Vec<Vec<EthernetFrame>>, id_to_find: i32) -> Option<(usize,
             .position(|id| id.id == id_to_find)
             .map(|j| (i, j))
     })
+}
+
+fn find_udp_packets(frames: &[EthernetFrame]) -> Vec<&EthernetFrame> {
+    frames.iter().filter(|&frame| frame.is_udp_packet()).collect()
 }

@@ -1,5 +1,5 @@
 use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::shared_structs::FieldType;
+use crate::packets::shared_structs::{FieldType, ProtocolType};
 use crate::traits::Layer;
 use pnet::packet::ethernet::{EtherType, EthernetPacket};
 use pnet::packet::Packet;
@@ -90,6 +90,9 @@ impl Layer for EthernetFrame {
 
     fn get_next(&self) -> &Option<Box<dyn Layer>> {
         &self.payload
+    }
+    fn protocol_type(&self) -> ProtocolType {
+        ProtocolType::Ethernet
     }
 }
 

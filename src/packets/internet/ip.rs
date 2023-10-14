@@ -1,4 +1,4 @@
-use crate::packets::shared_structs::FieldType;
+use crate::packets::shared_structs::{FieldType, ProtocolType};
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
 use crate::traits::Layer;
@@ -129,6 +129,10 @@ impl Layer for Ipv4Packet {
 
     fn get_next(&self) -> &Option<Box<dyn Layer>> {
         &self.payload
+    }
+
+    fn protocol_type(&self) -> ProtocolType {
+        ProtocolType::Ipv4
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
+use crate::packets::shared_structs::ProtocolType;
 
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
@@ -98,6 +99,9 @@ impl Layer for TcpPacket {
 
     fn get_next(&self) -> &Option<Box<dyn Layer>> {
         &self.payload
+    }
+    fn protocol_type(&self) -> ProtocolType {
+        ProtocolType::Tcp
     }
 }
 

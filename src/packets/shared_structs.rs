@@ -11,3 +11,13 @@ pub struct Summary {
     pub destination: String,
     pub info: String,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ProtocolType {
+    Ethernet,
+    Ipv4,
+    Udp,
+    Tcp,
+    Unknown,
+    // ... other protocols
+}
