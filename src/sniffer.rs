@@ -1,17 +1,14 @@
-use crate::packet_objects::basics::BasePacket;
+use crate::packets::datalink::ethernet::EthernetFrame;
 use pcap::Device;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};
 
-/*
-for gui implementation
- */
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
-    pub captured_packets: Arc<Mutex<Vec<Vec<BasePacket>>>>,
+    pub captured_packets: Arc<Mutex<Vec<Vec<EthernetFrame>>>>,
     pub stop: Arc<AtomicBool>,
 }
 
@@ -43,7 +40,7 @@ impl LiveCapture {
                             buffer_lock.push(vec![]);
                             vec_indexer += 1;
                         }
-                        buffer_lock[vec_indexer].push(BasePacket::new(index, packet.data.to_vec()));
+                        buffer_lock[vec_indexer].push(EthernetFrame::new(index, packet.data));
                         index += 1;
                     }
                 }

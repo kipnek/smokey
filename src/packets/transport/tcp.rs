@@ -1,0 +1,126 @@
+use crate::traits::Layer;
+use pnet::packet::Packet;
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Default)]
+pub struct TcpHeader {
+    pub source_port: u16,
+    pub destination_port: u16,
+    pub sequence_number: u32,
+    pub acknowledgment_number: u32,
+    pub data_offset_reserved_flags: u8,
+    pub window_size: u16,
+    pub checksum: u16,
+    pub urgent_pointer: u16,
+    pub flags: TcpFlags,
+    pub payload: Vec<u8>,
+    pub malformed: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct TcpFlags {
+    urg: bool,
+    ack: bool,
+    psh: bool,
+    rst: bool,
+    syn: bool,
+    fin: bool,
+}
+
+#[derive(Default)]
+pub struct TcpPacket {
+    pub header: TcpHeader,
+    pub payload: Option<Box<dyn Layer>>,
+}
+
+impl Layer for TcpPacket {
+    fn deserialize(&mut self, packet: &[u8]) {
+        let header = match pnet::packet::tcp::TcpPacket::new(packet) {
+            None => TcpHeader::malformed(packet),
+            Some(header) => TcpHeader {
+                source_port: header.get_source(),
+                destination_port: header.get_destination(),
+                sequence_number: header.get_sequence(),
+                acknowledgment_number: header.get_acknowledgement(),
+                data_offset_reserved_flags: header.get_data_offset(),
+                window_size: header.get_window(),
+                checksum: header.get_checksum(),
+                urgent_pointer: header.get_urgent_ptr(),
+                flags: TcpHeader::set_tcp_flags(header.get_flags()),
+                payload: header.payload().to_vec(),
+                malformed: false,
+            },
+        };
+    }
+
+    fn get_summary(&self) -> HashMap<String, String> {
+        let mut map: HashMap<String, String> = HashMap::new();
+        map.insert(
+            "source_port".to_string(),
+            self.header.source_port.to_string(),
+        );
+        map.insert(
+            "destination_port".to_string(),
+            self.header.destination_port.to_string(),
+        );
+        map.insert(
+            "acknowledgment_number".to_string(),
+            self.header.acknowledgment_number.to_string(),
+        );
+        map.insert(
+            "data_offset_reserved_flags".to_string(),
+            self.header.data_offset_reserved_flags.to_string(),
+        );
+        map.insert(
+            "window_size".to_string(),
+            self.header.window_size.to_string(),
+        );
+        map.insert("checksum".to_string(), self.header.checksum.to_string());
+        map.insert(
+            "urgent_pointer".to_string(),
+            self.header.urgent_pointer.to_string(),
+        );
+        map.insert(
+            "flags".to_string(),
+            format!(
+                "ack : {}, psh : {}, rst : {}, syn : {}, fin : {}",
+                self.header.flags.ack.to_string(),
+                self.header.flags.psh.to_string(),
+                self.header.flags.rst.to_string(),
+                self.header.flags.syn.to_string(),
+                self.header.flags.fin.to_string(),
+            ),
+        );
+        map.insert("malformed".to_string(), self.header.malformed.to_string());
+        map
+    }
+}
+
+impl TcpHeader {
+    fn set_tcp_flags(flags_byte: u8) -> TcpFlags {
+        TcpFlags {
+            urg: (flags_byte & 0b100000) != 0,
+            ack: (flags_byte & 0b010000) != 0,
+            psh: (flags_byte & 0b001000) != 0,
+            rst: (flags_byte & 0b000100) != 0,
+            syn: (flags_byte & 0b000010) != 0,
+            fin: (flags_byte & 0b000001) != 0,
+        }
+    }
+
+    fn malformed(payload: &[u8]) -> TcpHeader {
+        TcpHeader {
+            source_port: 0,
+            destination_port: 0,
+            sequence_number: 0,
+            acknowledgment_number: 0,
+            data_offset_reserved_flags: 0,
+            window_size: 0,
+            checksum: 0,
+            urgent_pointer: 0,
+            flags: Default::default(),
+            payload: payload.to_vec(),
+            malformed: false,
+        }
+    }
+}

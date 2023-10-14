@@ -1,34 +1,214 @@
-use crate::packet_objects::headers::protocol_headers::{tcp::TcpHeader, udp::UdpHeader};
-use crate::packet_objects::layers::protocol::ProtocolLayer;
-use crate::traits::Processable;
-use pnet::packet::{tcp, udp};
+use crate::packets::shared_structs::FieldType;
+use crate::packets::transport::tcp::TcpPacket;
+use crate::packets::transport::udp::UdpPacket;
+use crate::traits::Layer;
+use std::collections::HashMap;
 
-pub struct TransportProcessor {}
+/*
 
-impl TransportProcessor {
-    pub fn process_protocol(payload: &[u8], next_header: &u16) -> ProtocolLayer {
-        match next_header {
-            6 => process_tcp(payload),
-            17 => process_udp(payload),
-            _ => ProtocolLayer::Unknown,
+
+IPV4
+
+
+ */
+#[derive(Debug, Clone, Default)]
+pub struct Ipv4Header {
+    pub version_ihl: u8,
+    pub dscp_ecn: u8,
+    pub total_length: u16,
+    pub identification: u16,
+    pub flags_fragment_offset: u16,
+    pub time_to_live: u8,
+    pub header_checksum: u16,
+    pub source_address: String,
+    pub destination_address: String,
+    pub next_header: FieldType,
+    pub flags: Ipv4Flags,
+    pub payload: Vec<u8>,
+    pub malformed: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Ipv4Flags {
+    reserved: bool,
+    dontfrag: bool,
+    morefrag: bool,
+}
+
+#[derive(Default)]
+pub struct Ipv4Packet {
+    pub header: Ipv4Header,
+    pub payload: Option<Box<dyn Layer>>,
+}
+
+impl Layer for Ipv4Packet {
+    fn deserialize(&mut self, packet: &[u8]) {
+        let packet_header = match pnet::packet::ipv4::Ipv4Packet::new(packet) {
+            None => Ipv4Header::malformed(packet),
+            Some(header) => Ipv4Header {
+                version_ihl: header.get_version(),
+                dscp_ecn: header.get_dscp(),
+                total_length: header.get_total_length(),
+                identification: header.get_total_length(),
+                flags_fragment_offset: header.get_fragment_offset(),
+                time_to_live: header.get_ttl(),
+                header_checksum: header.get_checksum(),
+                source_address: header.get_source().to_string(),
+                destination_address: header.get_destination().to_string(),
+                next_header: set_next_header(header.get_next_level_protocol().0),
+                flags: Ipv4Header::set_flags(header.get_flags()),
+                payload: packet.to_vec(),
+                malformed: false,
+            },
+        };
+
+        let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.num.clone() {
+            6 => Some(Box::new(parse_tcp(&packet_header.payload))),
+            17 => Some(Box::new(parse_udp(&packet_header.payload))),
+            _ => None,
+        };
+
+        self.header = packet_header;
+        self.payload = payload;
+    }
+
+    fn get_summary(&self) -> HashMap<String, String> {
+        let mut map: HashMap<String, String> = HashMap::new();
+        map.insert("version".to_string(), self.header.version_ihl.to_string());
+        map.insert("dscp_ecn".to_string(), self.header.dscp_ecn.to_string());
+        map.insert(
+            "total_length".to_string(),
+            self.header.total_length.to_string(),
+        );
+        map.insert(
+            "identification".to_string(),
+            self.header.identification.to_string(),
+        );
+        map.insert(
+            "flags_fragment_offset".to_string(),
+            self.header.flags_fragment_offset.to_string(),
+        );
+        map.insert(
+            "time_to_live".to_string(),
+            self.header.time_to_live.to_string(),
+        );
+        map.insert(
+            "header_checksum".to_string(),
+            self.header.header_checksum.to_string(),
+        );
+        map.insert(
+            "source_address".to_string(),
+            self.header.source_address.to_string(),
+        );
+        map.insert(
+            "destination_address".to_string(),
+            self.header.destination_address.to_string(),
+        );
+        map.insert(
+            "next_header".to_string(),
+            format!(
+                "protocol : {} , number : {}",
+                self.header.next_header.field_name, self.header.next_header.num
+            ),
+        );
+        map.insert(
+            "flags".to_string(),
+            format!(
+                "reserved : {}, dont fragment : {},  more fragment : {}",
+                self.header.flags.reserved, self.header.flags.dontfrag, self.header.flags.morefrag
+            ),
+        );
+        map.insert("malformed".to_string(), self.header.malformed.to_string());
+        map
+    }
+}
+
+impl Ipv4Header {
+    pub fn malformed(packet: &[u8]) -> Ipv4Header {
+        Ipv4Header {
+            version_ihl: 4,
+            dscp_ecn: 0,
+            total_length: 0,
+            identification: 0,
+            flags_fragment_offset: 0,
+            time_to_live: 0,
+            header_checksum: 0,
+            source_address: "".to_string(),
+            destination_address: "".to_string(),
+            next_header: Default::default(),
+            flags: Ipv4Flags {
+                reserved: false,
+                dontfrag: false,
+                morefrag: false,
+            },
+            payload: packet.to_vec(),
+            malformed: true,
+        }
+    }
+    pub fn set_flags(number: u8) -> Ipv4Flags {
+        Ipv4Flags {
+            reserved: (number & 0b100) != 0,
+            dontfrag: (number & 0b010) != 0,
+            morefrag: (number & 0b001) != 0,
         }
     }
 }
 
-fn process_tcp(payload: &[u8]) -> ProtocolLayer {
-    if let Some(tcp_packet) = tcp::TcpPacket::new(payload) {
-        ProtocolLayer::Tcp(tcp_packet.process())
-    } else {
-        ProtocolLayer::Tcp(TcpHeader::deformed_packet(payload.to_vec()))
+/*
+
+IPV6
+
+ */
+#[derive(Debug, Clone)]
+pub struct Ipv6Header {
+    pub payload: Vec<u8>,
+    pub traffic_class: u8,
+    pub flow_label: u16,
+    pub payload_length: u16,
+    pub next_header: FieldType,
+    pub hop_limit: u8,
+    pub source: String,
+    pub destination: String,
+    pub version: u8,
+}
+
+fn set_next_header(number: u8) -> FieldType {
+    let name: String = match &number {
+        4 => {
+            //ipv4
+            "IPv4".to_string()
+        }
+        6 => {
+            //tcp
+            "Tcp".to_string()
+        }
+        17 => {
+            //tcp
+            "Udp".to_string()
+        }
+        41 => {
+            //ipv6
+            "IPv6".to_string()
+        }
+        _ => "n/a".to_string(),
+    };
+
+    FieldType {
+        field_name: name,
+        num: number as u16,
     }
 }
 
-fn process_udp(payload: &[u8]) -> ProtocolLayer {
-    if let Some(udp_packet) = udp::UdpPacket::new(payload) {
-        ProtocolLayer::Udp(udp_packet.process())
-    } else {
-        ProtocolLayer::Udp(UdpHeader::deformed_packet(payload.to_vec()))
-    }
+fn parse_tcp(payload: &[u8]) -> TcpPacket {
+    let mut packet = TcpPacket::default();
+    packet.deserialize(payload);
+    packet
+}
+
+fn parse_udp(payload: &[u8]) -> UdpPacket {
+    let mut packet = UdpPacket::default();
+    packet.deserialize(payload);
+    packet
 }
 
 /*
