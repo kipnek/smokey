@@ -1,10 +1,11 @@
-use crate::packets::shared_structs::{FieldType, ProtocolType};
+use crate::packets::shared_structs::{ProtocolDescriptor, ProtocolType};
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
 use crate::traits::Layer;
 use pnet::packet::ipv4::Ipv4OptionIterable;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use pnet::packet::ip::{IpNextHeaderProtocol, IpNextHeaderProtocols};
 
 /*
 
@@ -26,7 +27,7 @@ pub struct Ipv4Header {
     pub header_checksum: u16,
     pub source_address: String,
     pub destination_address: String,
-    pub next_header: FieldType,
+    pub next_header: ProtocolDescriptor<ExtendedNextHeader>,
     pub flags: Ipv4Flags,
     pub payload: Vec<u8>,
     pub malformed: bool,
@@ -81,16 +82,16 @@ impl Layer for Ipv4Packet {
                 header_checksum: header.get_checksum(),
                 source_address: header.get_source().to_string(),
                 destination_address: header.get_destination().to_string(),
-                next_header: set_next_header(header.get_next_level_protocol().0),
+                next_header: set_next_header(header.get_next_level_protocol()),
                 flags: Ipv4Header::set_flags(header.get_flags()),
                 payload: packet.to_vec(),
                 malformed: false,
             },
         };
 
-        let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.num {
-            6 => Some(Box::new(parse_tcp(&packet_header.payload))),
-            17 => Some(Box::new(parse_udp(&packet_header.payload))),
+        let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.protocol_type {
+            ExtendedNextHeader::Known(IpNextHeaderProtocols::Tcp)=>Some(Box::new(parse_tcp(&packet_header.payload))),
+            ExtendedNextHeader::Known(IpNextHeaderProtocols::Udp)=>Some(Box::new(parse_udp(&packet_header.payload))),
             _ => None,
         };
 
@@ -144,8 +145,8 @@ impl Layer for Ipv4Packet {
         map.insert(
             "next_header".to_string(),
             format!(
-                "protocol : {} , number : {}",
-                self.header.next_header.field_name, self.header.next_header.num
+                "protocol : {}",
+                self.header.next_header.protocol_name,
             ),
         );
         map.insert(
@@ -201,7 +202,10 @@ impl Ipv4Header {
             header_checksum: 0,
             source_address: "".to_string(),
             destination_address: "".to_string(),
-            next_header: Default::default(),
+            next_header: ProtocolDescriptor{
+                protocol_name: "malformed".to_string(),
+                protocol_type: ExtendedNextHeader::Malformed,
+            },
             flags: Ipv4Flags {
                 reserved: false,
                 dontfrag: false,
@@ -260,8 +264,6 @@ impl Ipv4Header {
     }
 }
 
-
-
 impl Ipv4Options {
     fn description(&self) -> &str {
         match self {
@@ -287,37 +289,54 @@ pub struct Ipv6Header {
     pub traffic_class: u8,
     pub flow_label: u16,
     pub payload_length: u16,
-    pub next_header: FieldType,
+    //pub next_header: ProtocolDescriptor,
     pub hop_limit: u8,
     pub source: String,
     pub destination: String,
     pub version: u8,
 }
 
-fn set_next_header(number: u8) -> FieldType {
-    let name: String = match &number {
-        4 => {
+/*
+fn set_next_header(next_header: IpNextHeaderProtocol) -> ProtocolDescriptor<IpNextHeaderProtocol> {
+    let protocol_name: String = match &next_header {
+        &IpNextHeaderProtocols::Ipv4 => {
             //ipv4
             "IPv4".to_string()
         }
-        6 => {
+        &IpNextHeaderProtocols::Tcp => {
             //tcp
             "Tcp".to_string()
         }
-        17 => {
+        &IpNextHeaderProtocols::Udp => {
             //tcp
             "Udp".to_string()
         }
-        41 => {
+        &IpNextHeaderProtocols::Ipv6 => {
             //ipv6
             "IPv6".to_string()
         }
         _ => "Unknown".to_string(),
     };
 
-    FieldType {
-        field_name: name,
-        num: number as u16,
+    ProtocolDescriptor {
+        protocol_name: protocol_name,
+        protocol_type: next_header,
+    }
+}*/
+fn protocol_to_string(proto: &IpNextHeaderProtocol) -> String {
+    match proto {
+        &IpNextHeaderProtocols::Ipv4 => "IPv4".to_string(),
+        &IpNextHeaderProtocols::Tcp => "Tcp".to_string(),
+        &IpNextHeaderProtocols::Udp => "Udp".to_string(),
+        &IpNextHeaderProtocols::Ipv6 => "IPv6".to_string(),
+        _ => "Unknown".to_string(),
+    }
+}
+
+fn set_next_header(next_header: IpNextHeaderProtocol) -> ProtocolDescriptor<ExtendedNextHeader> {
+    ProtocolDescriptor {
+        protocol_name: protocol_to_string(&next_header),
+        protocol_type: ExtendedNextHeader::Known(next_header),
     }
 }
 
@@ -333,7 +352,16 @@ fn parse_udp(payload: &[u8]) -> UdpPacket {
     packet
 }
 
+#[derive(Debug, Clone, Default)]
+pub enum ExtendedNextHeader{
+    Known(IpNextHeaderProtocol),
+    #[default]
+    Malformed
+}
+
 /*
+
+different values for the next header protocol
 
                &IpNextHeaderProtocols::Hopopt => "Hopopt",         // 0
                &IpNextHeaderProtocols::Icmp => "Icmp",             // 1

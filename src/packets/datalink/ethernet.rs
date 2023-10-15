@@ -1,67 +1,119 @@
 use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::shared_structs::{Description, FieldType, ProtocolType};
-use crate::traits::{Describable, Layer};
-use pnet::packet::ethernet::EthernetPacket;
+use crate::packets::shared_structs::{Description, ProtocolDescriptor, ProtocolType};
+use crate::traits::{Describable, Layer, SetProtocolDescriptor};
+use chrono::Utc;
+use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
 use pnet::packet::Packet;
 use std::collections::HashMap;
 use std::default::Default;
-use chrono::Utc;
+use pnet::packet::ethernet::EtherType;
 
 #[derive(Default, Clone, Debug)]
 pub struct EthernetHeader {
     pub source_mac: String,
     pub destination_mac: String,
-    pub ether_type: FieldType,
+    pub ether_type: ProtocolDescriptor<ExtendedEtherType>,
     pub payload: Vec<u8>,
     pub malformed: bool,
 }
 
-impl EthernetHeader {
-    pub fn set_fieldtype(number: u16) -> FieldType {
-        let name: String = match &number {
-            0x0800 => "IPv4".to_string(),
-            0x0806 => "ARP".to_string(),
-            0x86DD => "IPv6".to_string(),
-            _ => "Unknown".to_string(),
+impl SetProtocolDescriptor<ExtendedEtherType> for EthernetHeader {
+    fn set_proto_descriptor(proto: ExtendedEtherType) -> ProtocolDescriptor<ExtendedEtherType> {
+        let protocol_name = match &proto {
+            ExtendedEtherType::Known(ether_type) => {
+                set_name(ether_type)
+            }
+            ExtendedEtherType::Malformed => {
+                "malformed".to_string()
+            }
         };
-        FieldType {
-            field_name: name,
-            num: number,
+
+        ProtocolDescriptor {
+            protocol_name,
+            protocol_type: proto,
         }
     }
+}
+
+fn set_name(proto: &EtherType) -> String {
+    let name: String = match proto {
+        &EtherTypes::Ipv4 => "IPv4".to_string(),
+        &EtherTypes::Arp => "ARP".to_string(),
+        &EtherTypes::Ipv6=> "IPv6".to_string(),
+        _ => "Unknown".to_string(),
+    };
+    name
+}
+
+impl EthernetHeader {
+
+    /*
+    pub fn set_proto_descriptor(ether_type: ExtendedEtherType) -> ProtocolDescriptor<ExtendedEtherType> {
+
+
+        let protocol_name = match &ether_type {
+            ExtendedEtherType::Known(ether_type) => {
+                EthernetHeader::return_name(&ether_type)
+            }
+            ExtendedEtherType::Malformed => {
+                "malformed".to_string()
+            }
+        };
+
+        ProtocolDescriptor {
+            protocol_name,
+            protocol_type: ether_type,
+        }
+
+    fn return_name(etype : &EtherType) -> String {
+        let name: String = match etype {
+            &EtherTypes::Ipv4 => "IPv4".to_string(),
+            &EtherTypes::Arp => "ARP".to_string(),
+            &EtherTypes::Ipv6=> "IPv6".to_string(),
+            _ => "Unknown".to_string(),
+        };
+        name
+    }
+    */
+
     pub fn malformed(packet: &[u8]) -> EthernetHeader {
         EthernetHeader {
             source_mac: "".to_string(),
             destination_mac: "".to_string(),
-            ether_type: EthernetHeader::set_fieldtype(0),
+            ether_type: EthernetHeader::set_proto_descriptor(ExtendedEtherType::Malformed),
             payload: packet.to_vec(),
             malformed: true,
         }
     }
-
 }
 #[derive(Default, Debug)]
 pub struct EthernetFrame {
     pub id: i32,
-    pub timestamp :String,
+    pub timestamp: String,
     pub header: EthernetHeader,
     pub payload: Option<Box<dyn Layer>>,
 }
 
 impl Layer for EthernetFrame {
     fn deserialize(&mut self, packet: &[u8]) {
+
+
+
         let packet_header: EthernetHeader = match EthernetPacket::new(packet) {
             None => EthernetHeader::malformed(packet),
-            Some(header) => EthernetHeader {
-                source_mac: header.get_source().to_string(),
-                destination_mac: header.get_destination().to_string(),
-                ether_type: EthernetHeader::set_fieldtype(header.get_ethertype().0),
-                payload: header.payload().to_vec(),
-                malformed: false,
+            Some(header) => {
+                let ether_type = ExtendedEtherType::Known(header.get_ethertype());
+                EthernetHeader {
+                    source_mac: header.get_source().to_string(),
+                    destination_mac: header.get_destination().to_string(),
+                    ether_type: EthernetHeader::set_proto_descriptor(ExtendedEtherType::Known(header.get_ethertype())),
+                    payload: header.payload().to_vec(),
+                    malformed: false,
+                }
             },
         };
-        let payload: Option<Box<dyn Layer>> = match &packet_header.ether_type.num.clone() {
-            0x0800 => {
+        let payload: Option<Box<dyn Layer>> = match &packet_header.ether_type.protocol_type.clone() {
+            &ExtendedEtherType::Known(EtherTypes::Ipv4) => {
                 //ipv4
                 Some(Box::new(parse_ipv4(&packet_header.payload)))
             }
@@ -82,8 +134,8 @@ impl Layer for EthernetFrame {
         map.insert(
             "Ethertype".to_string(),
             format!(
-                "{} {}",
-                self.header.ether_type.field_name, self.header.ether_type.num
+                "{}",
+                self.header.ether_type.protocol_name
             ),
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
@@ -107,8 +159,8 @@ impl Layer for EthernetFrame {
 
     fn info(&self) -> String {
         format!(
-            "next header {}, with number {}",
-            self.header.ether_type.field_name, self.header.ether_type.num
+            "next header {}",
+            self.header.ether_type.protocol_name
         )
     }
 }
@@ -117,7 +169,7 @@ impl EthernetFrame {
     pub fn new(id: i32, packet: &[u8]) -> Self {
         let mut frame = EthernetFrame {
             id,
-            timestamp : Utc::now().to_string(),
+            timestamp: Utc::now().to_string(),
             ..Default::default()
         };
         frame.deserialize(packet);
@@ -125,11 +177,14 @@ impl EthernetFrame {
     }
 }
 
-impl Describable for EthernetFrame{
-    fn get_description(&self) -> Description {
-        let (source, destination) = if self.payload.as_ref().is_none(){
-            (self.header.source_mac.clone(), self.header.destination_mac.clone())
-        }else{
+impl Describable for EthernetFrame {
+    fn get_short(&self) -> Description {
+        let (source, destination) = if self.payload.as_ref().is_none() {
+            (
+                self.header.source_mac.clone(),
+                self.header.destination_mac.clone(),
+            )
+        } else {
             let payload = self.payload.as_ref().unwrap();
             (payload.source(), payload.destination())
         };
@@ -139,7 +194,6 @@ impl Describable for EthernetFrame{
         } else {
             (ProtocolType::Ethernet, self.info())
         };
-
 
         Description {
             id: self.id,
@@ -151,7 +205,7 @@ impl Describable for EthernetFrame{
         }
     }
 
-    fn get_all(&self) -> Vec<HashMap<String, String>> {
+    fn get_long(&self) -> Vec<HashMap<String, String>> {
         let mut vec_map = vec![self.get_summary()];
         let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(self));
         while let Some(layer) = &current_layer {
@@ -169,7 +223,7 @@ impl Describable for EthernetFrame{
 fn get_innermost_info(layer: &dyn Layer) -> (ProtocolType, String) {
     match layer.get_next() {
         Some(next) => get_innermost_info(next.as_ref()),
-        None => (layer.protocol_type(), layer.info())
+        None => (layer.protocol_type(), layer.info()),
     }
 }
 
@@ -179,7 +233,16 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
     packet
 }
 
+#[derive(Default, Clone, Debug)]
+pub enum ExtendedEtherType {
+    Known(EtherType),
+    #[default]
+    Malformed,
+}
+
 /*
+
+this is the different values for the next header protocol
 
    pub const Ipv4: EtherType = EtherType(0x0800);
    /// Address Resolution Protocol (ARP) \[RFC7042\].

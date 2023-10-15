@@ -1,7 +1,6 @@
-use crate::packets::shared_structs::{ProtocolType, Description};
+use crate::packets::shared_structs::{Description, ProtocolDescriptor, ProtocolType};
 use std::collections::HashMap;
 use std::fmt::Debug;
-
 
 pub trait Layer: Send + Debug {
     fn deserialize(&mut self, packet: &[u8]);
@@ -23,11 +22,15 @@ pub trait Layer: Send + Debug {
 }
 
 pub trait Describable: Send + Debug + Layer {
-    fn get_description(&self) -> Description;
+    fn get_short(&self) -> Description;
 
-    fn get_all(&self) -> Vec<HashMap<String, String>>;
+    fn get_long(&self) -> Vec<HashMap<String, String>>;
 }
 
+
+pub trait SetProtocolDescriptor<T>: Send + Debug {
+    fn set_proto_descriptor(proto: T) -> ProtocolDescriptor<T>;
+}
 /*
 If you want to filter or search packets based on specific criteria like port or
 address, you would generally implement accessor methods in the Layer trait and

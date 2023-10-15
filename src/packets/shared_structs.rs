@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Default)]
-pub struct FieldType {
-    pub field_name: String,
-    pub num: u16,
+pub struct ProtocolDescriptor<T> {
+    pub protocol_name: String,
+    pub protocol_type: T,
 }
 
 #[derive(Debug)]
@@ -14,12 +14,12 @@ pub struct Summary {
 
 #[derive(Debug)]
 pub struct Description {
-    pub id : i32,
-    pub timestamp : String,
-    pub protocol : ProtocolType,
+    pub id: i32,
+    pub timestamp: String,
+    pub protocol: ProtocolType,
     pub source: String,
     pub destination: String,
-    pub info : String
+    pub info: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]

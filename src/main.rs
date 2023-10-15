@@ -4,12 +4,12 @@ mod traits;
 
 use crate::packets::datalink::ethernet::EthernetFrame;
 use crate::traits::Describable;
+use chrono::Duration;
+use chrono::{DateTime, Utc};
 use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::{io, panic, thread};
-use chrono::{DateTime, Utc};
-use chrono::Duration;
 
 fn main() {
     panic::set_hook(Box::new(custom_panic_handler));
@@ -39,8 +39,8 @@ fn main() {
         if let Ok(lock) = live.captured_packets.lock() {
             if let Some((outside, inside)) = find_id(&lock, trimmed_input) {
                 let layer_obj: &dyn Describable = &lock[outside][inside];
-                println!("{:?}", layer_obj.get_description());
-                println!("{:?}", layer_obj.get_all())
+                println!("{:?}", layer_obj.get_short());
+                println!("{:?}", layer_obj.get_long())
             }
         }
     }
@@ -71,7 +71,7 @@ fn get_duration_from_string(timestamp: &str) -> Option<Duration> {
         Ok(time) => {
             let now = Utc::now();
             Some(now.signed_duration_since(time))
-        },
-        Err(_) => None
+        }
+        Err(_) => None,
     }
 }
