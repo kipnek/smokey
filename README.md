@@ -1,11 +1,6 @@
 # cnote
 cli rust protocol analyzer
 
-## CLI
-Making it a cli first then a gui
-
-lot of refactoring coming up too after this refactoring.
-
 ## How it works
 
 ### base frame
@@ -17,7 +12,8 @@ pub struct EthernetFrame {
     pub payload: Option<Box<dyn Layer>>,
 }
 ```
-Layer is a trait object that gets implemented further down the line.
+Layer is a trait object that gets implemented further down the line. Ever protocol it encapsulates
+implements the trait Layer
 
 ### Layers
 Every packet implements the layer trait, layer implements the ```Send``` marker
