@@ -32,8 +32,6 @@ Each packet that implements layer handles the logic for the layer it encapsulate
 
 ### Milestones
 1. Establish a general framework for the backend that is a reasonable approach
-   🔵🔵🔵🔵🔵⬜⬜⬜⬜⬜ 50%
-2. Set up basic gui
-   ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0%
-3. Figure out how to handle 802.11 frame
-   ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0%
+🔵🔵🔵🔵🔵⬜⬜⬜⬜⬜ 50%
+2. Set up basic gui - ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0%
+3. Figure out how to handle 802.11 frame - ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0%
