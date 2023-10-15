@@ -72,6 +72,19 @@ pub struct EthernetFrame {
     pub payload: Option<Box<dyn Layer>>,
 }
 
+impl EthernetFrame {
+    pub fn new(id: i32, packet: &[u8]) -> Self {
+        let mut frame = EthernetFrame {
+            id,
+            timestamp: Utc::now().to_string(),
+            ..Default::default()
+        };
+        frame.deserialize(packet);
+        frame
+    }
+}
+
+//trait impls
 impl Layer for EthernetFrame {
     fn deserialize(&mut self, packet: &[u8]) {
         let packet_header: EthernetHeader = match EthernetPacket::new(packet) {
@@ -131,18 +144,6 @@ impl Layer for EthernetFrame {
 
     fn info(&self) -> String {
         format!("next header {}", self.header.ether_type.protocol_name)
-    }
-}
-
-impl EthernetFrame {
-    pub fn new(id: i32, packet: &[u8]) -> Self {
-        let mut frame = EthernetFrame {
-            id,
-            timestamp: Utc::now().to_string(),
-            ..Default::default()
-        };
-        frame.deserialize(packet);
-        frame
     }
 }
 

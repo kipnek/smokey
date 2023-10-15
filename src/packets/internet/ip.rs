@@ -160,6 +160,7 @@ pub struct Ipv4Packet {
     pub payload: Option<Box<dyn Layer>>,
 }
 
+//impls for ipv4 packet
 impl Debug for Ipv4Packet {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Ipv4Packet")

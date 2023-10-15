@@ -38,10 +38,9 @@ fn main() {
         }
         let trimmed_input: i32 = input.trim().parse::<i32>().unwrap();
         if let Ok(lock) = live.captured_packets.lock() {
-            if let Some((outside, inside)) = find_id(&lock, trimmed_input) {
-                let layer_obj: &dyn Describable = &lock[outside][inside];
-                println!("{:?}", layer_obj.get_short());
-                println!("{:?}", layer_obj.get_long())
+            if let Some(ref eframe) = get_describable(&lock, trimmed_input){
+                println!("{:?}", eframe.get_short());
+                println!("{:?}", eframe.get_long())
             }
         }
     }
@@ -52,14 +51,14 @@ fn custom_panic_handler(info: &panic::PanicInfo) {
     println!("Panic occurred: {:?}", info);
 }
 
-fn find_id(vectors: &[Vec<EthernetFrame>], id_to_find: i32) -> Option<(usize, usize)> {
+fn get_describable(vectors: &[Vec<EthernetFrame>], id_to_find: i32) -> Option<&EthernetFrame> {
     vectors.iter().enumerate().find_map(|(i, vector)| {
         vector
             .iter()
-            .position(|id| id.id == id_to_find)
-            .map(|j| (i, j))
+            .find(|i| i.id == id_to_find)
     })
 }
+
 
 /*
 fn find_udp_packets(frames: &[EthernetFrame]) -> Vec<&EthernetFrame> {
