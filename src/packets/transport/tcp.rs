@@ -3,6 +3,14 @@ use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
 
+/*
+
+
+TCP header
+
+
+ */
+
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
     pub source_port: u16,
@@ -27,6 +35,45 @@ pub struct TcpFlags {
     syn: bool,
     fin: bool,
 }
+
+impl TcpHeader {
+    fn set_tcp_flags(flags_byte: u8) -> TcpFlags {
+        TcpFlags {
+            urg: (flags_byte & 0b100000) != 0,
+            ack: (flags_byte & 0b010000) != 0,
+            psh: (flags_byte & 0b001000) != 0,
+            rst: (flags_byte & 0b000100) != 0,
+            syn: (flags_byte & 0b000010) != 0,
+            fin: (flags_byte & 0b000001) != 0,
+        }
+    }
+
+    fn malformed(payload: &[u8]) -> TcpHeader {
+        TcpHeader {
+            source_port: 0,
+            destination_port: 0,
+            sequence_number: 0,
+            acknowledgment_number: 0,
+            data_offset_reserved_flags: 0,
+            window_size: 0,
+            checksum: 0,
+            urgent_pointer: 0,
+            flags: Default::default(),
+            payload: payload.to_vec(),
+            malformed: false,
+        }
+    }
+}
+
+
+/*
+
+
+TCP Packet
+
+
+ */
+
 
 #[derive(Default, Debug)]
 pub struct TcpPacket {
@@ -119,34 +166,5 @@ impl Layer for TcpPacket {
             "TCP Source Port {} -> Destination {}",
             self.header.source_port, self.header.destination_port
         )
-    }
-}
-
-impl TcpHeader {
-    fn set_tcp_flags(flags_byte: u8) -> TcpFlags {
-        TcpFlags {
-            urg: (flags_byte & 0b100000) != 0,
-            ack: (flags_byte & 0b010000) != 0,
-            psh: (flags_byte & 0b001000) != 0,
-            rst: (flags_byte & 0b000100) != 0,
-            syn: (flags_byte & 0b000010) != 0,
-            fin: (flags_byte & 0b000001) != 0,
-        }
-    }
-
-    fn malformed(payload: &[u8]) -> TcpHeader {
-        TcpHeader {
-            source_port: 0,
-            destination_port: 0,
-            sequence_number: 0,
-            acknowledgment_number: 0,
-            data_offset_reserved_flags: 0,
-            window_size: 0,
-            checksum: 0,
-            urgent_pointer: 0,
-            flags: Default::default(),
-            payload: payload.to_vec(),
-            malformed: false,
-        }
     }
 }

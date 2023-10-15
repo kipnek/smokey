@@ -3,6 +3,14 @@ use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
 
+
+/*
+
+
+Udp Header
+
+
+ */
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
     pub source_port: u16,
@@ -12,6 +20,30 @@ pub struct UdpHeader {
     pub payload: Vec<u8>,
     pub malformed: bool,
 }
+
+
+impl UdpHeader {
+    fn malformed(payload: &[u8]) -> UdpHeader {
+        UdpHeader {
+            source_port: 0,
+            destination_port: 0,
+            length: 0,
+            checksum: 0,
+            payload: payload.to_vec(),
+            malformed: true,
+        }
+    }
+}
+
+
+/*
+
+
+UDP Packet
+
+
+ */
+
 
 #[derive(Default, Debug)]
 pub struct UdpPacket {
@@ -75,18 +107,5 @@ impl Layer for UdpPacket {
             "UDP Source Port {} -> Destination {}",
             self.header.source_port, self.header.destination_port
         )
-    }
-}
-
-impl UdpHeader {
-    fn malformed(payload: &[u8]) -> UdpHeader {
-        UdpHeader {
-            source_port: 0,
-            destination_port: 0,
-            length: 0,
-            checksum: 0,
-            payload: payload.to_vec(),
-            malformed: true,
-        }
     }
 }

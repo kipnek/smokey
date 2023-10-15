@@ -42,17 +42,6 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
         }
     }
 }
-
-fn set_name(proto: &EtherType) -> String {
-    let name: String = match proto {
-        &EtherTypes::Ipv4 => "IPv4".to_string(),
-        &EtherTypes::Arp => "ARP".to_string(),
-        &EtherTypes::Ipv6 => "IPv6".to_string(),
-        _ => "Unknown".to_string(),
-    };
-    name
-}
-
 impl EthernetHeader {
     pub fn malformed(packet: &[u8]) -> EthernetHeader {
         EthernetHeader {
@@ -222,4 +211,14 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
     let mut packet = Ipv4Packet::default();
     packet.deserialize(payload);
     packet
+}
+
+fn set_name(proto: &EtherType) -> String {
+    let name: String = match proto {
+        &EtherTypes::Ipv4 => "IPv4".to_string(),
+        &EtherTypes::Arp => "ARP".to_string(),
+        &EtherTypes::Ipv6 => "IPv6".to_string(),
+        _ => "Unknown".to_string(),
+    };
+    name
 }

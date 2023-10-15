@@ -43,6 +43,107 @@ pub struct Ipv4Flags {
     morefrag: bool,
 }
 
+#[derive(Clone, Debug)]
+pub enum Ipv4Options {
+    Eol,
+    Nop,
+    Lsrr,
+    Ssrr,
+    Rr,
+    Timestamp,
+    Unknown(String),
+}
+
+impl Ipv4Header {
+    pub fn malformed(packet: &[u8]) -> Ipv4Header {
+        Ipv4Header {
+            version_ihl: 4,
+            dscp: 0,
+            ecn: 0,
+            total_length: 0,
+            identification: 0,
+            options: vec![],
+            flags_fragment_offset: 0,
+            time_to_live: 0,
+            header_checksum: 0,
+            source_address: "".to_string(),
+            destination_address: "".to_string(),
+            next_header: ProtocolDescriptor {
+                protocol_name: "malformed".to_string(),
+                protocol_type: ExtendedType::Malformed,
+            },
+            flags: Ipv4Flags {
+                reserved: false,
+                dontfrag: false,
+                morefrag: false,
+            },
+            payload: packet.to_vec(),
+            malformed: true,
+        }
+    }
+    pub fn set_flags(number: u8) -> Ipv4Flags {
+        Ipv4Flags {
+            reserved: (number & 0b100) != 0,
+            dontfrag: (number & 0b010) != 0,
+            morefrag: (number & 0b001) != 0,
+        }
+    }
+
+    pub fn set_options(options: Ipv4OptionIterable) -> Vec<Ipv4Options> {
+        let mut results = vec![];
+        for option in options {
+            match option.get_number().0 {
+                0x00 => {
+                    // End of Options List
+                    results.push(Ipv4Options::Eol);
+                }
+                0x01 => {
+                    // No Operation
+                    results.push(Ipv4Options::Nop);
+                }
+                0x83 => {
+                    // Loose Source and Record Route
+                    results.push(Ipv4Options::Lsrr);
+                }
+                0x89 => {
+                    // Strict Source and Record Route
+                    results.push(Ipv4Options::Ssrr);
+                }
+                0x07 => {
+                    // Record Route
+                    results.push(Ipv4Options::Rr);
+                }
+                0x44 => {
+                    // Timestamp
+                    results.push(Ipv4Options::Timestamp);
+                }
+                // ... add other options as needed
+                _ => {
+                    results.push(Ipv4Options::Unknown(format!(
+                        "Unknown Option: {:#X}",
+                        option.get_number().0
+                    )));
+                }
+            }
+        }
+        results
+    }
+}
+
+impl Ipv4Options {
+    fn description(&self) -> &str {
+        match self {
+            Ipv4Options::Eol => "End of Options List",
+            Ipv4Options::Nop => "No Operation",
+            Ipv4Options::Lsrr => "Loose Source and Record Route",
+            Ipv4Options::Ssrr => "Strict Source and Record Route",
+            Ipv4Options::Rr => "Record Route",
+            Ipv4Options::Timestamp => "Timestamp",
+            Ipv4Options::Unknown(desc) => desc,
+        }
+    }
+}
+
 /*
 
 
@@ -57,17 +158,6 @@ IPv4 Packets
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
-}
-
-#[derive(Clone, Debug)]
-pub enum Ipv4Options {
-    Eol,
-    Nop,
-    Lsrr,
-    Ssrr,
-    Rr,
-    Timestamp,
-    Unknown(String),
 }
 
 impl Debug for Ipv4Packet {
@@ -202,95 +292,6 @@ impl Layer for Ipv4Packet {
     }
 }
 
-impl Ipv4Header {
-    pub fn malformed(packet: &[u8]) -> Ipv4Header {
-        Ipv4Header {
-            version_ihl: 4,
-            dscp: 0,
-            ecn: 0,
-            total_length: 0,
-            identification: 0,
-            options: vec![],
-            flags_fragment_offset: 0,
-            time_to_live: 0,
-            header_checksum: 0,
-            source_address: "".to_string(),
-            destination_address: "".to_string(),
-            next_header: ProtocolDescriptor {
-                protocol_name: "malformed".to_string(),
-                protocol_type: ExtendedType::Malformed,
-            },
-            flags: Ipv4Flags {
-                reserved: false,
-                dontfrag: false,
-                morefrag: false,
-            },
-            payload: packet.to_vec(),
-            malformed: true,
-        }
-    }
-    pub fn set_flags(number: u8) -> Ipv4Flags {
-        Ipv4Flags {
-            reserved: (number & 0b100) != 0,
-            dontfrag: (number & 0b010) != 0,
-            morefrag: (number & 0b001) != 0,
-        }
-    }
-
-    pub fn set_options(options: Ipv4OptionIterable) -> Vec<Ipv4Options> {
-        let mut results = vec![];
-        for option in options {
-            match option.get_number().0 {
-                0x00 => {
-                    // End of Options List
-                    results.push(Ipv4Options::Eol);
-                }
-                0x01 => {
-                    // No Operation
-                    results.push(Ipv4Options::Nop);
-                }
-                0x83 => {
-                    // Loose Source and Record Route
-                    results.push(Ipv4Options::Lsrr);
-                }
-                0x89 => {
-                    // Strict Source and Record Route
-                    results.push(Ipv4Options::Ssrr);
-                }
-                0x07 => {
-                    // Record Route
-                    results.push(Ipv4Options::Rr);
-                }
-                0x44 => {
-                    // Timestamp
-                    results.push(Ipv4Options::Timestamp);
-                }
-                // ... add other options as needed
-                _ => {
-                    results.push(Ipv4Options::Unknown(format!(
-                        "Unknown Option: {:#X}",
-                        option.get_number().0
-                    )));
-                }
-            }
-        }
-        results
-    }
-}
-
-impl Ipv4Options {
-    fn description(&self) -> &str {
-        match self {
-            Ipv4Options::Eol => "End of Options List",
-            Ipv4Options::Nop => "No Operation",
-            Ipv4Options::Lsrr => "Loose Source and Record Route",
-            Ipv4Options::Ssrr => "Strict Source and Record Route",
-            Ipv4Options::Rr => "Record Route",
-            Ipv4Options::Timestamp => "Timestamp",
-            Ipv4Options::Unknown(desc) => desc,
-        }
-    }
-}
 
 /*
 
@@ -314,6 +315,14 @@ pub struct Ipv6Header {
     pub version: u8,
 }
 
+
+/*
+
+
+Helper functions
+
+
+ */
 fn protocol_to_string(proto: &IpNextHeaderProtocol) -> String {
     match proto {
         &IpNextHeaderProtocols::Ipv4 => "IPv4".to_string(),
