@@ -1,5 +1,5 @@
-use crate::packets::shared_structs::ProtocolType;
-use crate::traits::Layer;
+use crate::packets::shared_objs::ProtocolType;
+use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
 

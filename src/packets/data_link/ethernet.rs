@@ -1,14 +1,13 @@
-use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::shared_structs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
-use crate::traits::{Describable, Layer, SetProtocolDescriptor};
+use crate::packets::{
+    internet::ip::Ipv4Packet,
+    shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType},
+    traits::{Describable, Layer, SetProtocolDescriptor},
+};
 use chrono::Utc;
-use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
+use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
 use std::collections::HashMap;
 use std::default::Default;
-use pnet::packet::ethernet::EtherType;
-
-
 
 /*
 
@@ -29,14 +28,12 @@ pub struct EthernetHeader {
     pub malformed: bool,
 }
 impl SetProtocolDescriptor<EtherType> for EthernetHeader {
-    fn set_proto_descriptor(proto: ExtendedType<EtherType>) -> ProtocolDescriptor<ExtendedType<EtherType>> {
+    fn set_proto_descriptor(
+        proto: ExtendedType<EtherType>,
+    ) -> ProtocolDescriptor<ExtendedType<EtherType>> {
         let protocol_name = match &proto {
-            ExtendedType::Known(ether_type) => {
-                set_name(ether_type)
-            }
-            ExtendedType::Malformed => {
-                "malformed".to_string()
-            }
+            ExtendedType::Known(ether_type) => set_name(ether_type),
+            ExtendedType::Malformed => "malformed".to_string(),
         };
 
         ProtocolDescriptor {
@@ -46,12 +43,11 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
     }
 }
 
-
 fn set_name(proto: &EtherType) -> String {
     let name: String = match proto {
         &EtherTypes::Ipv4 => "IPv4".to_string(),
         &EtherTypes::Arp => "ARP".to_string(),
-        &EtherTypes::Ipv6=> "IPv6".to_string(),
+        &EtherTypes::Ipv6 => "IPv6".to_string(),
         _ => "Unknown".to_string(),
     };
     name
@@ -89,22 +85,20 @@ pub struct EthernetFrame {
 
 impl Layer for EthernetFrame {
     fn deserialize(&mut self, packet: &[u8]) {
-
-
-
         let packet_header: EthernetHeader = match EthernetPacket::new(packet) {
             None => EthernetHeader::malformed(packet),
-            Some(header) => {
-                EthernetHeader {
-                    source_mac: header.get_source().to_string(),
-                    destination_mac: header.get_destination().to_string(),
-                    ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Known(header.get_ethertype())),
-                    payload: header.payload().to_vec(),
-                    malformed: false,
-                }
+            Some(header) => EthernetHeader {
+                source_mac: header.get_source().to_string(),
+                destination_mac: header.get_destination().to_string(),
+                ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Known(
+                    header.get_ethertype(),
+                )),
+                payload: header.payload().to_vec(),
+                malformed: false,
             },
         };
-        let payload: Option<Box<dyn Layer>> = match &packet_header.ether_type.protocol_type.clone() {
+        let payload: Option<Box<dyn Layer>> = match &packet_header.ether_type.protocol_type.clone()
+        {
             &ExtendedType::Known(EtherTypes::Ipv4) => {
                 //ipv4
                 Some(Box::new(parse_ipv4(&packet_header.payload)))
@@ -124,8 +118,8 @@ impl Layer for EthernetFrame {
             self.header.destination_mac.to_string(),
         );
         map.insert(
-            "Ethertype".to_string(),
-                self.header.ether_type.protocol_name.to_string(),
+            "EtherType".to_string(),
+            self.header.ether_type.protocol_name.to_string(),
         );
         map.insert("malformed".to_string(), self.header.malformed.to_string());
         map
@@ -147,10 +141,7 @@ impl Layer for EthernetFrame {
     }
 
     fn info(&self) -> String {
-        format!(
-            "next header {}",
-            self.header.ether_type.protocol_name
-        )
+        format!("next header {}", self.header.ether_type.protocol_name)
     }
 }
 
@@ -232,4 +223,3 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
     packet.deserialize(payload);
     packet
 }
-

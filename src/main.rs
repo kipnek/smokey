@@ -1,9 +1,10 @@
 mod packets;
 mod sniffer;
-mod traits;
+//mod basic_traits;
+mod gui;
 
-use crate::packets::datalink::ethernet::EthernetFrame;
-use crate::traits::Describable;
+use crate::packets::data_link::ethernet::EthernetFrame;
+use crate::packets::traits::Describable;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use std::io::Write;

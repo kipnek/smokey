@@ -1,4 +1,4 @@
-use crate::packets::shared_structs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
+use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
 use std::collections::HashMap;
 use std::fmt::Debug;
 

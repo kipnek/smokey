@@ -1,13 +1,12 @@
-use crate::packets::shared_structs::{ExtendedType, ProtocolDescriptor, ProtocolType};
-use crate::packets::transport::tcp::TcpPacket;
-use crate::packets::transport::udp::UdpPacket;
-use crate::traits::Layer;
-use pnet::packet::ipv4::Ipv4OptionIterable;
+use crate::packets::shared_objs::{ExtendedType, ProtocolDescriptor, ProtocolType};
+use crate::packets::traits::Layer;
+use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
+use pnet::packet::{
+    ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
+    ipv4::Ipv4OptionIterable,
+};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
-use pnet::packet::ip::{IpNextHeaderProtocol, IpNextHeaderProtocols};
-
-
 
 /*
 
@@ -104,8 +103,12 @@ impl Layer for Ipv4Packet {
         };
 
         let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.protocol_type {
-            ExtendedType::Known(IpNextHeaderProtocols::Tcp)=>Some(Box::new(parse_tcp(&packet_header.payload))),
-            ExtendedType::Known(IpNextHeaderProtocols::Udp)=>Some(Box::new(parse_udp(&packet_header.payload))),
+            ExtendedType::Known(IpNextHeaderProtocols::Tcp) => {
+                Some(Box::new(parse_tcp(&packet_header.payload)))
+            }
+            ExtendedType::Known(IpNextHeaderProtocols::Udp) => {
+                Some(Box::new(parse_udp(&packet_header.payload)))
+            }
             _ => None,
         };
 
@@ -158,10 +161,7 @@ impl Layer for Ipv4Packet {
         );
         map.insert(
             "next_header".to_string(),
-            format!(
-                "protocol : {}",
-                self.header.next_header.protocol_name,
-            ),
+            format!("protocol : {}", self.header.next_header.protocol_name,),
         );
         map.insert(
             "flags".to_string(),
@@ -216,7 +216,7 @@ impl Ipv4Header {
             header_checksum: 0,
             source_address: "".to_string(),
             destination_address: "".to_string(),
-            next_header: ProtocolDescriptor{
+            next_header: ProtocolDescriptor {
                 protocol_name: "malformed".to_string(),
                 protocol_type: ExtendedType::Malformed,
             },
@@ -324,7 +324,9 @@ fn protocol_to_string(proto: &IpNextHeaderProtocol) -> String {
     }
 }
 
-fn set_next_header(next_header: IpNextHeaderProtocol) -> ProtocolDescriptor<ExtendedType<IpNextHeaderProtocol>> {
+fn set_next_header(
+    next_header: IpNextHeaderProtocol,
+) -> ProtocolDescriptor<ExtendedType<IpNextHeaderProtocol>> {
     ProtocolDescriptor {
         protocol_name: protocol_to_string(&next_header),
         protocol_type: ExtendedType::Known(next_header),
@@ -344,8 +346,8 @@ fn parse_udp(payload: &[u8]) -> UdpPacket {
 }
 
 #[derive(Debug, Clone, Default)]
-pub enum ExtendedNextHeader{
+pub enum ExtendedNextHeader {
     Known(IpNextHeaderProtocol),
     #[default]
-    Malformed
+    Malformed,
 }

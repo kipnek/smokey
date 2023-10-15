@@ -1,4 +1,4 @@
-use crate::packets::datalink::ethernet::EthernetFrame;
+use crate::packets::data_link::ethernet::EthernetFrame;
 use pcap::{Device, Linktype};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -30,7 +30,6 @@ impl LiveCapture {
             if let Ok(mut cap) = pcap::Capture::from_device(device)
                 .and_then(|cap| cap.immediate_mode(true).promisc(true).open())
             {
-
                 let cap_type = match cap.get_datalink() {
                     Linktype(link) => link,
                 };

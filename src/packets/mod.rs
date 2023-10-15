@@ -1,5 +1,6 @@
-pub mod datalink;
+pub mod data_link;
 
 pub mod internet;
-pub mod shared_structs;
+pub mod shared_objs;
+pub mod traits;
 pub mod transport;
