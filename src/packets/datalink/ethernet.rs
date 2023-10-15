@@ -1,5 +1,5 @@
 use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::shared_structs::{Description, ProtocolDescriptor, ProtocolType};
+use crate::packets::shared_structs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
 use crate::traits::{Describable, Layer, SetProtocolDescriptor};
 use chrono::Utc;
 use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
@@ -8,22 +8,28 @@ use std::collections::HashMap;
 use std::default::Default;
 use pnet::packet::ethernet::EtherType;
 
+
+
+/*
+
+Ethernet Header
+
+ */
 #[derive(Default, Clone, Debug)]
 pub struct EthernetHeader {
     pub source_mac: String,
     pub destination_mac: String,
-    pub ether_type: ProtocolDescriptor<ExtendedEtherType>,
+    pub ether_type: ProtocolDescriptor<ExtendedType<EtherType>>,
     pub payload: Vec<u8>,
     pub malformed: bool,
 }
-
-impl SetProtocolDescriptor<ExtendedEtherType> for EthernetHeader {
-    fn set_proto_descriptor(proto: ExtendedEtherType) -> ProtocolDescriptor<ExtendedEtherType> {
+impl SetProtocolDescriptor<EtherType> for EthernetHeader {
+    fn set_proto_descriptor(proto: ExtendedType<EtherType>) -> ProtocolDescriptor<ExtendedType<EtherType>> {
         let protocol_name = match &proto {
-            ExtendedEtherType::Known(ether_type) => {
+            ExtendedType::Known(ether_type) => {
                 set_name(ether_type)
             }
-            ExtendedEtherType::Malformed => {
+            ExtendedType::Malformed => {
                 "malformed".to_string()
             }
         };
@@ -34,6 +40,7 @@ impl SetProtocolDescriptor<ExtendedEtherType> for EthernetHeader {
         }
     }
 }
+
 
 fn set_name(proto: &EtherType) -> String {
     let name: String = match proto {
@@ -46,46 +53,23 @@ fn set_name(proto: &EtherType) -> String {
 }
 
 impl EthernetHeader {
-
-    /*
-    pub fn set_proto_descriptor(ether_type: ExtendedEtherType) -> ProtocolDescriptor<ExtendedEtherType> {
-
-
-        let protocol_name = match &ether_type {
-            ExtendedEtherType::Known(ether_type) => {
-                EthernetHeader::return_name(&ether_type)
-            }
-            ExtendedEtherType::Malformed => {
-                "malformed".to_string()
-            }
-        };
-
-        ProtocolDescriptor {
-            protocol_name,
-            protocol_type: ether_type,
-        }
-
-    fn return_name(etype : &EtherType) -> String {
-        let name: String = match etype {
-            &EtherTypes::Ipv4 => "IPv4".to_string(),
-            &EtherTypes::Arp => "ARP".to_string(),
-            &EtherTypes::Ipv6=> "IPv6".to_string(),
-            _ => "Unknown".to_string(),
-        };
-        name
-    }
-    */
-
     pub fn malformed(packet: &[u8]) -> EthernetHeader {
         EthernetHeader {
             source_mac: "".to_string(),
             destination_mac: "".to_string(),
-            ether_type: EthernetHeader::set_proto_descriptor(ExtendedEtherType::Malformed),
+            ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Malformed),
             payload: packet.to_vec(),
             malformed: true,
         }
     }
 }
+
+/*
+
+Ethernet Frame
+
+ */
+
 #[derive(Default, Debug)]
 pub struct EthernetFrame {
     pub id: i32,
@@ -102,18 +86,17 @@ impl Layer for EthernetFrame {
         let packet_header: EthernetHeader = match EthernetPacket::new(packet) {
             None => EthernetHeader::malformed(packet),
             Some(header) => {
-                let ether_type = ExtendedEtherType::Known(header.get_ethertype());
                 EthernetHeader {
                     source_mac: header.get_source().to_string(),
                     destination_mac: header.get_destination().to_string(),
-                    ether_type: EthernetHeader::set_proto_descriptor(ExtendedEtherType::Known(header.get_ethertype())),
+                    ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Known(header.get_ethertype())),
                     payload: header.payload().to_vec(),
                     malformed: false,
                 }
             },
         };
         let payload: Option<Box<dyn Layer>> = match &packet_header.ether_type.protocol_type.clone() {
-            &ExtendedEtherType::Known(EtherTypes::Ipv4) => {
+            &ExtendedType::Known(EtherTypes::Ipv4) => {
                 //ipv4
                 Some(Box::new(parse_ipv4(&packet_header.payload)))
             }
@@ -220,6 +203,13 @@ impl Describable for EthernetFrame {
     }
 }
 
+/*
+
+helper functions
+
+ */
+
+//might be in another trait ]
 fn get_innermost_info(layer: &dyn Layer) -> (ProtocolType, String) {
     match layer.get_next() {
         Some(next) => get_innermost_info(next.as_ref()),
@@ -233,6 +223,9 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
     packet
 }
 
+
+
+//might
 #[derive(Default, Clone, Debug)]
 pub enum ExtendedEtherType {
     Known(EtherType),

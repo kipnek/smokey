@@ -31,3 +31,10 @@ pub enum ProtocolType {
     Unknown,
     // ... other protocols
 }
+
+#[derive(Default, Clone, Debug)]
+pub enum ExtendedType<T> {
+    Known(T),
+    #[default]
+    Malformed,
+}

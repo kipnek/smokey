@@ -1,4 +1,4 @@
-use crate::packets::shared_structs::{Description, ProtocolDescriptor, ProtocolType};
+use crate::packets::shared_structs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -29,7 +29,7 @@ pub trait Describable: Send + Debug + Layer {
 
 
 pub trait SetProtocolDescriptor<T>: Send + Debug {
-    fn set_proto_descriptor(proto: T) -> ProtocolDescriptor<T>;
+    fn set_proto_descriptor(proto: ExtendedType<T>) -> ProtocolDescriptor<ExtendedType<T>>;
 }
 /*
 If you want to filter or search packets based on specific criteria like port or
