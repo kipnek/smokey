@@ -2,6 +2,7 @@ use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::collections::HashMap;
+use linked_hash_map::LinkedHashMap;
 
 /*
 
@@ -103,8 +104,8 @@ impl Layer for TcpPacket {
         self.payload = None;
     }
 
-    fn get_summary(&self) -> HashMap<String, String> {
-        let mut map: HashMap<String, String> = HashMap::new();
+    fn get_summary(&self) -> LinkedHashMap<String, String> {
+        let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
         map.insert("protocol".to_string(), "tcp".to_string());
         map.insert(
             "source_port".to_string(),
