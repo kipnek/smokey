@@ -30,7 +30,7 @@ This is just a rough outline for anyone who reads this/myself so i know what im 
 Each packet that implements layer handles the logic for the layer it encapsulates.
 
 ### Milestones
-1. Establish a general framework for the backend that is a reasonable approach
+1. Establish a general framework for the backend that is a reasonable approach <br />
 🔵🔵🔵🔵🔵⬜⬜⬜⬜⬜ 50%
 2. Logging - <br />
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0 %
