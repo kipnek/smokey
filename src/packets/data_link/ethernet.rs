@@ -189,6 +189,10 @@ impl Describable for EthernetFrame {
 
         vec_map
     }
+
+    fn get_id(&self) -> i32 {
+        self.id.clone()
+    }
 }
 
 /*

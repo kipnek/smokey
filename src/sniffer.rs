@@ -3,12 +3,14 @@ use pcap::{Device, Linktype};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};
+use crate::packets::traits::Describable;
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page : usize,
-    pub captured_packets: Arc<Mutex<Vec<Vec<EthernetFrame>>>>,
+    pub selected : Option<i32>,
+    pub captured_packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>,
     pub stop: Arc<AtomicBool>,
 }
 
@@ -47,7 +49,7 @@ impl LiveCapture {
 
                         //makes sure it is an ethernet capture as opposed to wifi
                         if cap_type == 1 {
-                            buffer_lock[vec_indexer].push(EthernetFrame::new(index, packet.data));
+                            buffer_lock[vec_indexer].push(Box::new(EthernetFrame::new(index, packet.data)));
                             index += 1;
                         }
                     }

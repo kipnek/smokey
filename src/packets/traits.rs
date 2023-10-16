@@ -26,6 +26,8 @@ pub trait Describable: Send + Debug + Layer {
     fn get_short(&self) -> Description;
 
     fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;
+
+    fn get_id(&self) -> i32;
 }
 
 pub trait SetProtocolDescriptor<T>: Send + Debug {
