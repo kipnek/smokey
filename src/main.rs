@@ -11,9 +11,13 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::{io, panic, thread};
+use iced::Application;
+use crate::sniffer::LiveCapture;
 
-fn main() {
+fn main()-> iced::Result {
     panic::set_hook(Box::new(custom_panic_handler));
+
+    /*
     let live = sniffer::LiveCapture {
         interfaces: vec![],
         captured_packets: Arc::new(Mutex::new(vec![vec![]])),
@@ -40,10 +44,17 @@ fn main() {
         if let Ok(lock) = live.captured_packets.lock() {
             if let Some(ref eframe) = get_describable(&lock, trimmed_input){
                 println!("{:?}", eframe.get_short());
-                println!("{:?}", eframe.get_long())
+                let smoke  = eframe.get_long();
+                for i in smoke {
+                    for (key, value) in &i {
+                        println!("{}: {}", key, value);
+                    }
+                }
             }
         }
-    }
+    }*/
+
+    LiveCapture::run(iced::Settings::default())
 }
 
 fn custom_panic_handler(info: &panic::PanicInfo) {
@@ -52,11 +63,12 @@ fn custom_panic_handler(info: &panic::PanicInfo) {
 }
 
 fn get_describable(vectors: &[Vec<EthernetFrame>], id_to_find: i32) -> Option<&EthernetFrame> {
-    vectors.iter().enumerate().find_map(|(i, vector)| {
-        vector
-            .iter()
-            .find(|i| i.id == id_to_find)
-    })
+    for vector in vectors {
+        if let Some(frame) = vector.iter().find(|frame| frame.id == id_to_find) {
+            return Some(frame);
+        }
+    }
+    None
 }
 
 

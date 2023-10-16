@@ -7,6 +7,7 @@ use std::{panic, thread};
 #[derive(Clone, Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
+    pub page : usize,
     pub captured_packets: Arc<Mutex<Vec<Vec<EthernetFrame>>>>,
     pub stop: Arc<AtomicBool>,
 }

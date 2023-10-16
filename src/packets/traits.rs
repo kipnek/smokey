@@ -1,11 +1,12 @@
 use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use linked_hash_map::LinkedHashMap;
 
 pub trait Layer: Send + Debug {
     fn deserialize(&mut self, packet: &[u8]);
 
-    fn get_summary(&self) -> HashMap<String, String>;
+    fn get_summary(&self) -> LinkedHashMap<String, String>;
 
     fn get_next(&self) -> &Option<Box<dyn Layer>>;
 
@@ -24,7 +25,7 @@ pub trait Layer: Send + Debug {
 pub trait Describable: Send + Debug + Layer {
     fn get_short(&self) -> Description;
 
-    fn get_long(&self) -> Vec<HashMap<String, String>>;
+    fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;
 }
 
 pub trait SetProtocolDescriptor<T>: Send + Debug {

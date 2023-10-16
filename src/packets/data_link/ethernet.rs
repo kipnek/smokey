@@ -8,6 +8,7 @@ use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
 use std::collections::HashMap;
 use std::default::Default;
+use linked_hash_map::LinkedHashMap;
 
 /*
 
@@ -111,8 +112,8 @@ impl Layer for EthernetFrame {
         self.payload = payload;
     }
 
-    fn get_summary(&self) -> HashMap<String, String> {
-        let mut map: HashMap<String, String> = HashMap::new();
+    fn get_summary(&self) -> LinkedHashMap<String, String> {
+        let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
         map.insert("protocol".to_string(), "ethernet".to_string());
         map.insert("Source Mac".to_string(), self.header.source_mac.to_string());
         map.insert(
@@ -175,7 +176,7 @@ impl Describable for EthernetFrame {
         }
     }
 
-    fn get_long(&self) -> Vec<HashMap<String, String>> {
+    fn get_long(&self) -> Vec<LinkedHashMap<String, String>> {
         let mut vec_map = vec![self.get_summary()];
         let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(self));
         while let Some(layer) = &current_layer {

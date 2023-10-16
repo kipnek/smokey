@@ -7,6 +7,7 @@ use pnet::packet::{
 };
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use linked_hash_map::LinkedHashMap;
 
 /*
 
@@ -207,8 +208,8 @@ impl Layer for Ipv4Packet {
         self.payload = payload;
     }
 
-    fn get_summary(&self) -> HashMap<String, String> {
-        let mut map: HashMap<String, String> = HashMap::new();
+    fn get_summary(&self) -> LinkedHashMap<String, String> {
+        let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
 
         let options_string = self
             .header
