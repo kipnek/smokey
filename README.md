@@ -3,6 +3,14 @@ rust protocol analyzer (early dev)
 
 ## How it works
 
+first make sure rust is installed then clone the project then in the root of the 
+project
+```cargo run```
+and the basic window should show up.
+
+### Supported protocols
+Ethernet, IPv4, UDP, and TCP right now
+
 ### base frame
 ```rust
 #[derive(Default, Debug)]
