@@ -276,12 +276,12 @@ impl Layer for Ipv4Packet {
         ProtocolType::Ipv4
     }
 
-    fn source(&self) -> Cow<str> {
-        Cow::Borrowed(&self.header.source_address)
+    fn source(&self) -> String {
+        self.header.source_address.clone()
     }
 
-    fn destination(&self) -> Cow<str> {
-        Cow::Borrowed(&self.header.destination_address)
+    fn destination(&self) -> String {
+        self.header.destination_address.clone()
     }
 
     fn info(&self) -> String {

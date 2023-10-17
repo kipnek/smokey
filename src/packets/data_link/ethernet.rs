@@ -71,6 +71,7 @@ pub struct EthernetFrame {
     pub id: i32,
     pub timestamp: String,
     pub header: EthernetHeader,
+    pub description : Description,
     pub payload: Option<Box<dyn Layer>>,
 }
 
@@ -111,6 +112,7 @@ impl Layer for EthernetFrame {
         };
         self.header = packet_header;
         self.payload = payload;
+        self.description = self.get_short();
     }
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
@@ -136,14 +138,13 @@ impl Layer for EthernetFrame {
         ProtocolType::Ethernet
     }
 
-    fn source(&self) -> Cow<str> {
-
-        Cow::Borrowed(&self.header.source_mac)
+    fn source(&self) -> String {
+        self.header.source_mac.clone()
     }
 
-    fn destination(&self) -> Cow<str> {
+    fn destination(&self) -> String {
 
-        Cow::Borrowed(&self.header.destination_mac)
+        self.header.destination_mac.clone()
     }
 
     fn info(&self) -> String {
@@ -161,7 +162,7 @@ impl Describable for EthernetFrame {
 
         Description {
             id: self.id,
-            timestamp: Cow::Borrowed(&self.timestamp),
+            timestamp: self.timestamp.to_string(),
             protocol: layer.protocol_type(),
             source: layer.source(),
             destination: layer.destination(),
@@ -185,6 +186,10 @@ impl Describable for EthernetFrame {
 
     fn get_id(&self) -> i32 {
         self.id.clone()
+    }
+
+    fn get_description(&self) -> &Description {
+        &self.description
     }
 }
 

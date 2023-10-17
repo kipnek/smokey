@@ -15,13 +15,25 @@ pub struct Summary {
 }
 
 #[derive(Debug)]
-pub struct Description<'a> {
+pub struct Description {
     pub id: i32,
-    pub timestamp: Cow<'a, str>,
+    pub timestamp: String,
     pub protocol: ProtocolType,
-    pub source: Cow<'a, str>,
-    pub destination: Cow<'a, str>,
+    pub source: String,
+    pub destination: String,
     pub info: String,
+}
+impl Default for Description{
+    fn default() -> Self {
+        Description {
+            id: 0,
+            timestamp: String::new(),
+            protocol: ProtocolType::Unknown,  // Assuming ProtocolType also implements Default
+            source: String::new(),
+            destination: String::new(),
+            info: String::new(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
