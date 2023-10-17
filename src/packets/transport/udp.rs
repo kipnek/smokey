@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
@@ -95,12 +96,12 @@ impl Layer for UdpPacket {
         ProtocolType::Udp
     }
 
-    fn source(&self) -> String {
-        self.header.source_port.to_string()
+    fn source(&self) -> Cow<str> {
+        Cow::Owned(self.header.source_port.to_string())
     }
 
-    fn destination(&self) -> String {
-        self.header.destination_port.to_string()
+    fn destination(&self) -> Cow<str> {
+        Cow::Owned(self.header.destination_port.to_string())
     }
 
     fn info(&self) -> String {
