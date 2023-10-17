@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -14,8 +15,8 @@ pub trait Layer: Send + Debug {
         ProtocolType::Unknown // or a suitable default
     }
 
-    fn source(&self) -> String;
-    fn destination(&self) -> String;
+    fn source(&self) -> Cow<str>;
+    fn destination(&self) -> Cow<str>;
 
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_string()

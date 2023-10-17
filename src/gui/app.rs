@@ -109,7 +109,8 @@ impl Application for LiveCapture {
                 let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
                     |scroll_adapters, frame| {
-                        let description = frame.get_short().info;
+                        let short =frame.get_short();
+                        let description = format!("{} {} {} {} {}", short.id, short.timestamp, short.source,short.destination, short.info);
                         scroll_adapters.push(
                             Button::new(Text::new(description))
                                 .padding([5, 5])

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::packets::shared_objs::{ExtendedType, ProtocolDescriptor, ProtocolType};
 use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
@@ -275,12 +276,12 @@ impl Layer for Ipv4Packet {
         ProtocolType::Ipv4
     }
 
-    fn source(&self) -> String {
-        self.header.source_address.clone()
+    fn source(&self) -> Cow<str> {
+        Cow::Borrowed(&self.header.source_address)
     }
 
-    fn destination(&self) -> String {
-        self.header.destination_address.clone()
+    fn destination(&self) -> Cow<str> {
+        Cow::Borrowed(&self.header.destination_address)
     }
 
     fn info(&self) -> String {

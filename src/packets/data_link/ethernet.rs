@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::packets::{
     internet::ip::Ipv4Packet,
     shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType},
@@ -135,12 +136,14 @@ impl Layer for EthernetFrame {
         ProtocolType::Ethernet
     }
 
-    fn source(&self) -> String {
-        self.header.source_mac.to_string()
+    fn source(&self) -> Cow<str> {
+
+        Cow::Borrowed(&self.header.source_mac)
     }
 
-    fn destination(&self) -> String {
-        self.header.destination_mac.to_string()
+    fn destination(&self) -> Cow<str> {
+
+        Cow::Borrowed(&self.header.destination_mac)
     }
 
     fn info(&self) -> String {
@@ -150,29 +153,19 @@ impl Layer for EthernetFrame {
 
 impl Describable for EthernetFrame {
     fn get_short(&self) -> Description {
-        let (source, destination) = if self.payload.as_ref().is_none() {
-            (
-                self.header.source_mac.clone(),
-                self.header.destination_mac.clone(),
-            )
-        } else {
-            let payload = self.payload.as_ref().unwrap();
-            (payload.source(), payload.destination())
-        };
 
-        let (protocol, info) = if let Some(payload) = self.payload.as_ref() {
-            get_innermost_info(payload.as_ref())
-        } else {
-            (ProtocolType::Ethernet, self.info())
+        let layer: &dyn Layer = match self.payload.as_ref() {
+            Some(payload) => get_innermost_layer(payload.as_ref()),
+            None => self as &dyn Layer,
         };
 
         Description {
             id: self.id,
-            timestamp: self.timestamp.clone(),
-            protocol,
-            source,
-            destination,
-            info,
+            timestamp: Cow::Borrowed(&self.timestamp),
+            protocol: layer.protocol_type(),
+            source: layer.source(),
+            destination: layer.destination(),
+            info: layer.info(),
         }
     }
 
@@ -210,6 +203,13 @@ fn get_innermost_info(layer: &dyn Layer) -> (ProtocolType, String) {
     match layer.get_next() {
         Some(next) => get_innermost_info(next.as_ref()),
         None => (layer.protocol_type(), layer.info()),
+    }
+}
+
+fn get_innermost_layer(layer: &dyn Layer) -> &dyn Layer {
+    match layer.get_next() {
+        Some(next) => get_innermost_layer(next.as_ref()),
+        None => layer,
     }
 }
 
