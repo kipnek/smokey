@@ -3,6 +3,7 @@ mod sniffer;
 //mod basic_traits;
 mod gui;
 
+
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::traits::Describable;
 use chrono::Duration;
@@ -62,6 +63,7 @@ fn custom_panic_handler(info: &panic::PanicInfo) {
     println!("Panic occurred: {:?}", info);
 }
 
+/*
 fn get_describable(vectors: &[Vec<EthernetFrame>], id_to_find: i32) -> Option<&EthernetFrame> {
     for vector in vectors {
         if let Some(frame) = vector.iter().find(|frame| frame.id == id_to_find) {
@@ -71,7 +73,7 @@ fn get_describable(vectors: &[Vec<EthernetFrame>], id_to_find: i32) -> Option<&E
     None
 }
 
-
+*/
 /*
 fn find_udp_packets(frames: &[EthernetFrame]) -> Vec<&EthernetFrame> {
     //frames.iter().filter(|&frame| frame.is_udp_packet()).collect()

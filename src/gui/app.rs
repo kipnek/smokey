@@ -109,7 +109,7 @@ impl Application for LiveCapture {
                 let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
                     |scroll_adapters, frame| {
-                        let short =frame.get_short();
+                        let short = frame.get_description();
                         let description = format!("{} {} {} {} {}", short.id, short.timestamp, short.source,short.destination, short.info);
                         scroll_adapters.push(
                             Button::new(Text::new(description))
@@ -164,7 +164,7 @@ impl Application for LiveCapture {
     }*/
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        time::every(Duration::from_millis(300)).map(|_| Message::Tick)
+        time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
     }
 }
 
@@ -176,3 +176,15 @@ fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Op
     }
     None
 }
+
+/*
+//this is just boilerplate for the cache
+use iced::{Cache, Column, Text};
+
+let mut cache = Cache::new();
+
+let ui = cache.draw(|| {
+    Column::new().push(Text::new("This layout is cached!"))
+});
+
+ */

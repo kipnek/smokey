@@ -15,8 +15,8 @@ pub trait Layer: Send + Debug {
         ProtocolType::Unknown // or a suitable default
     }
 
-    fn source(&self) -> Cow<str>;
-    fn destination(&self) -> Cow<str>;
+    fn source(&self) -> String;
+    fn destination(&self) -> String;
 
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_string()
@@ -29,6 +29,8 @@ pub trait Describable: Send + Debug + Layer {
     fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;
 
     fn get_id(&self) -> i32;
+
+    fn get_description(&self) -> &Description;
 }
 
 pub trait SetProtocolDescriptor<T>: Send + Debug {
