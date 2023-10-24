@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
+use tokio;
 use std::time::Duration;
+use crossbeam::channel::Receiver;
 use crate::sniffer::LiveCapture;
 use iced::{Alignment, Application, Command, Element, executor, Length, Renderer, Subscription, Theme, time};
 use iced::application::StyleSheet;
@@ -14,7 +16,8 @@ pub enum Message {
     Stop,
     NextPage,
     PreviousPage,
-    FrameSelected(i32)
+    FrameSelected(i32),
+    //DataReceived(Vec<Box<dyn Describable>>)
 }
 
 impl Application for LiveCapture {
@@ -24,15 +27,27 @@ impl Application for LiveCapture {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let app = LiveCapture {
-            interfaces: Vec::new(), // or some default interfaces
-            page: 0,
-            selected: None,
-            captured_packets: Arc::new(Mutex::new(vec![vec![]])),
-            stop: Arc::new(AtomicBool::new(false)),
-        };
+        let app = LiveCapture::default();
+        /*tokio::spawn(async move {
+            let mut interval = interval(Duration::from_millis(100));
+            loop {
+                interval.tick().await; // Wait for 100ms
 
-        (app, iced::Command::none())
+                let mut batch = Vec::with_capacity(100);
+                for _ in 0..100 {
+                    match receiver.try_recv() {
+                        Ok(data) => batch.push(data),
+                        Err(_) => break, // Exit the loop if there's no more data in the channel
+                    }
+                }
+
+                if !batch.is_empty() {
+                    // Send the data to the iced application. Replace `YOUR_ICE_SEND_HANDLE` with the appropriate way to send messages to your iced application.
+                    YOUR_ICE_SEND_HANDLE.send(YourMessage::NewData(batch)).unwrap();
+                }
+            }
+        });*/
+        (app, iced::Command::perform(async {}, |_| Message::Tick))
     }
 
     fn title(&self) -> String {
@@ -42,7 +57,7 @@ impl Application for LiveCapture {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::Tick => {
-
+                tokio::spawn(fetch_data_from_channel(self.channel.1.clone(), self.captured_packets.clone()));
             },
             Message::Start => {
                 self.capture()
@@ -52,9 +67,9 @@ impl Application for LiveCapture {
             },
             Message::NextPage => {
                 if let Ok(lock) = self.captured_packets.lock(){
-                    if self.page < lock.len() - 1 {
-                        self.page += 1;
-                    }
+                if self.page < lock.len() - 1 {
+                    self.page += 1;
+                }
                 }
             },
             Message::PreviousPage => {
@@ -62,10 +77,10 @@ impl Application for LiveCapture {
                     self.page -= 1;
                 }
             },
-            Message::FrameSelected(frame_id) =>{
-                 self.selected = Some(frame_id);
+            Message::FrameSelected(frame_id) => {
+                self.selected = Some(frame_id);
             },
-        }
+        };
         Command::none()
     }
 
@@ -176,6 +191,43 @@ fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Op
     }
     None
 }
+
+fn append_describables(main_vector: &mut Vec<Vec<Box<dyn Describable>>>, describables: Vec<Box<dyn Describable>>) {
+    if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
+        main_vector.push(Vec::with_capacity(1000));
+    }
+
+    let last_vector = main_vector.last_mut().unwrap();
+
+    let available_space = 1000 - last_vector.len();
+    let items_to_append = std::cmp::min(describables.len(), available_space);
+
+    let mut iter = describables.into_iter();
+    for item in iter.by_ref().take(items_to_append) {
+        last_vector.push(item);
+    }
+
+    let leftover_describables: Vec<_> = iter.collect();
+
+    if !leftover_describables.is_empty() {
+        append_describables(main_vector, leftover_describables);
+    }
+}
+
+async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>) {
+    let mut batch = Vec::with_capacity(100);
+    for _ in 0..100 {
+        match receiver.try_recv() {
+            Ok(data) => batch.push(data),
+            Err(_) => break,  // Exit the loop if there's no more data in the channel
+        }
+    }
+    if let Ok(mut lock) = packets.lock(){
+        append_describables(&mut lock, batch);
+    }
+}
+
+
 
 /*
 //this is just boilerplate for the cache

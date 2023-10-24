@@ -3,13 +3,15 @@ use pcap::{Device, Linktype};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};
+use crossbeam::channel::{Receiver, Sender, SendError};
 use crate::packets::traits::Describable;
 
-#[derive(Default)]
+
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page : usize,
     pub selected : Option<i32>,
+    pub channel : (Sender<Box<dyn Describable>>, Receiver<Box<dyn Describable>>),
     pub captured_packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>,
     pub stop: Arc<AtomicBool>,
 }
@@ -19,6 +21,7 @@ impl LiveCapture {
         let stop = self.stop.clone();
         let vec_deque = self.captured_packets.clone();
         let mut vec_indexer = 0;
+        let sender = self.channel.0.clone();
         thread::spawn(move || {
             let mut index = 0;
 
@@ -39,8 +42,18 @@ impl LiveCapture {
 
                 while let Ok(packet) = cap.next_packet() {
                     if stop.load(Ordering::Relaxed) {
+                        //maybe save file here?
                         break;
                     }
+                    match  sender.send(Box::new(EthernetFrame::new(index, packet.data))){
+                        Ok(_) => {
+                            index += 1;
+                        }
+                        Err(_) => {
+                            println!("log error for sending in sniffer")
+                        }
+                    }
+                    /*
                     if let Ok(mut buffer_lock) = vec_deque.lock() {
                         if buffer_lock[buffer_lock.len() - 1].len() >= 1000 {
                             buffer_lock.push(vec![]);
@@ -52,16 +65,29 @@ impl LiveCapture {
                             buffer_lock[vec_indexer].push(Box::new(EthernetFrame::new(index, packet.data)));
                             index += 1;
                         }
-                    }
+                    }*/
                 }
                 stop.store(false, Ordering::Release);
-                drop(vec_deque);
+                //drop(vec_deque);
             }
         });
     }
 
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
+    }
+}
+
+impl Default for LiveCapture{
+    fn default() -> Self {
+        LiveCapture{
+            interfaces: vec![],
+            page: 0,
+            selected: None,
+            channel: crossbeam::channel::unbounded::<Box<dyn Describable>>(),
+            captured_packets: Arc::new(Mutex::new(vec![vec![]])),
+            stop: Arc::new(Default::default()),
+        }
     }
 }
 

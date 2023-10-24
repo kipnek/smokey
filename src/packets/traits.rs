@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use linked_hash_map::LinkedHashMap;
 
-pub trait Layer: Send + Debug {
+pub trait Layer: Send + Sync + Debug {
     fn deserialize(&mut self, packet: &[u8]);
 
     fn get_summary(&self) -> LinkedHashMap<String, String>;
@@ -23,7 +23,7 @@ pub trait Layer: Send + Debug {
     }
 }
 
-pub trait Describable: Send + Debug + Layer {
+pub trait Describable: Send + Sync + Debug + Layer{
     fn get_short(&self) -> Description;
 
     fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;
