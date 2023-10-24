@@ -1,3 +1,4 @@
+use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 use tokio;
@@ -39,7 +40,7 @@ impl Application for LiveCapture {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::Tick => {
-                tokio::spawn(fetch_data_from_channel(self.channel.1.clone(), self.captured_packets.clone()));
+                fetch_data_from_channel(self.channel.1.clone(), &mut self.captured_packets);
             },
             Message::Start => {
                 self.capture()
@@ -48,11 +49,11 @@ impl Application for LiveCapture {
                 self.stop()
             },
             Message::NextPage => {
-                if let Ok(lock) = self.captured_packets.lock(){
-                if self.page < lock.len() - 1 {
+                //if let Ok(lock) = self.captured_packets.lock(){
+                if self.page < self.captured_packets.len() - 1 {
                     self.page += 1;
                 }
-                }
+                //}
             },
             Message::PreviousPage => {
                 if self.page > 0 {
@@ -74,7 +75,7 @@ impl Application for LiveCapture {
 
 
         // Lock once here
-        if let Ok(lock) = self.captured_packets.lock() {
+        //if let Ok(lock) = self.captured_packets.lock() {
             let prev_disabled = self.page == 0;
 
             if !prev_disabled {
@@ -89,7 +90,7 @@ impl Application for LiveCapture {
             }
 
 
-            let next_disabled = self.page + 1 >= lock.len();
+            let next_disabled = self.page + 1 >= self.captured_packets.len();
             if !next_disabled {
                 column = column.push(
                     Button::new(Text::new("Next"))
@@ -100,7 +101,7 @@ impl Application for LiveCapture {
                     Button::new(Text::new("Next"))
                 );
             }
-            if let Some(data) = lock.get(self.page) {
+            if let Some(data) = self.captured_packets.get(self.page) {
                 let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
                     |scroll_adapters, frame| {
@@ -118,7 +119,7 @@ impl Application for LiveCapture {
             }
 
             if let Some(selected_id) = self.selected {
-                if let Some(frame) = get_describable(&lock, selected_id){
+                if let Some(frame) = get_describable(&self.captured_packets, selected_id){
                     let scroll = scrollable(
                         frame.get_long().iter().fold(
                             Column::new().padding(13).spacing(5),
@@ -134,10 +135,10 @@ impl Application for LiveCapture {
                     column = column.push(scroll);
                 }
             }
-        } else {
+        //} else {
             // Handle the lock error if needed. For instance, you could display an error message:
             // column = column.push(Text::new("Failed to lock captured packets."));
-        }
+        //}
 
         column.into()
     }
@@ -153,9 +154,15 @@ impl Application for LiveCapture {
 
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        time::every(Duration::from_millis(1000)).map(|_| Message::NoOp)
+        time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
     }
 }
+
+/*
+
+helper functions
+
+ */
 
 fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Option<&Box<dyn Describable>> {
     for vector in vectors {
@@ -188,6 +195,20 @@ fn append_describables(main_vector: &mut Vec<Vec<Box<dyn Describable>>>, describ
     }
 }
 
+fn fetch_data_from_channel(
+    receiver: Receiver<Box<dyn Describable>>,
+    packets: &mut Vec<Vec<Box<dyn Describable>>>,
+) {
+    if packets.is_empty() || packets.last().unwrap().len() == 1000 {
+        packets.push(Vec::with_capacity(1000));
+    }
+
+    let last_vector = packets.last_mut().unwrap();
+    let limit = 100.min(1000 - last_vector.len());
+    last_vector.extend(receiver.try_iter().take(limit));
+}
+
+/*
 async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>) {
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
@@ -195,7 +216,7 @@ async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packe
         for _ in 0..100 {
             match receiver.try_recv() {
                 Ok(data) => batch.push(data),
-                Err(_) => break,  // Exit the loop if there's no more data in the channel
+                Err(_) => break,
             }
         }
         if let Ok(mut lock) = packets.lock() {
@@ -203,8 +224,7 @@ async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packe
         }
     }
 }
-
-
+*/
 
 /*
 //this is just boilerplate for the cache

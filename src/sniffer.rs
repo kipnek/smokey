@@ -12,15 +12,13 @@ pub struct LiveCapture {
     pub page : usize,
     pub selected : Option<i32>,
     pub channel : (Sender<Box<dyn Describable>>, Receiver<Box<dyn Describable>>),
-    pub captured_packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>,
+    pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
     pub stop: Arc<AtomicBool>,
 }
 
 impl LiveCapture {
     pub fn capture(&mut self) {
         let stop = self.stop.clone();
-        let vec_deque = self.captured_packets.clone();
-        let mut vec_indexer = 0;
         let sender = self.channel.0.clone();
         thread::spawn(move || {
             let mut index = 0;
@@ -85,7 +83,7 @@ impl Default for LiveCapture{
             page: 0,
             selected: None,
             channel: crossbeam::channel::unbounded::<Box<dyn Describable>>(),
-            captured_packets: Arc::new(Mutex::new(vec![vec![]])),
+            captured_packets: vec![vec![]],
             stop: Arc::new(Default::default()),
         }
     }
