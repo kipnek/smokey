@@ -18,6 +18,7 @@ pub enum Message {
     PreviousPage,
     FrameSelected(i32),
     //DataReceived(Vec<Box<dyn Describable>>)
+    NoOp
 }
 
 impl Application for LiveCapture {
@@ -28,25 +29,6 @@ impl Application for LiveCapture {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let app = LiveCapture::default();
-        /*tokio::spawn(async move {
-            let mut interval = interval(Duration::from_millis(100));
-            loop {
-                interval.tick().await; // Wait for 100ms
-
-                let mut batch = Vec::with_capacity(100);
-                for _ in 0..100 {
-                    match receiver.try_recv() {
-                        Ok(data) => batch.push(data),
-                        Err(_) => break, // Exit the loop if there's no more data in the channel
-                    }
-                }
-
-                if !batch.is_empty() {
-                    // Send the data to the iced application. Replace `YOUR_ICE_SEND_HANDLE` with the appropriate way to send messages to your iced application.
-                    YOUR_ICE_SEND_HANDLE.send(YourMessage::NewData(batch)).unwrap();
-                }
-            }
-        });*/
         (app, iced::Command::perform(async {}, |_| Message::Tick))
     }
 
@@ -80,6 +62,7 @@ impl Application for LiveCapture {
             Message::FrameSelected(frame_id) => {
                 self.selected = Some(frame_id);
             },
+            Message::NoOp =>{}
         };
         Command::none()
     }
@@ -118,9 +101,6 @@ impl Application for LiveCapture {
                 );
             }
             if let Some(data) = lock.get(self.page) {
-                /*for item in data.iter() {
-                    column = column.push(Text::new(item.get_short().info));
-                }*/
                 let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
                     |scroll_adapters, frame| {
@@ -154,13 +134,6 @@ impl Application for LiveCapture {
                     column = column.push(scroll);
                 }
             }
-            /*
-            if self.page > 0 {
-                column = column.push(Button::new(Text::new("Previous")).on_press(Message::PreviousPage));
-            }
-            if self.page + 1 < lock.len() {
-                column = column.push(Button::new(Text::new("Next")).on_press(Message::NextPage));
-            }*/
         } else {
             // Handle the lock error if needed. For instance, you could display an error message:
             // column = column.push(Text::new("Failed to lock captured packets."));
@@ -178,8 +151,9 @@ impl Application for LiveCapture {
 
     }*/
 
+
     fn subscription(&self) -> Subscription<Self::Message> {
-        time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
+        time::every(Duration::from_millis(1000)).map(|_| Message::NoOp)
     }
 }
 
@@ -215,15 +189,18 @@ fn append_describables(main_vector: &mut Vec<Vec<Box<dyn Describable>>>, describ
 }
 
 async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>) {
-    let mut batch = Vec::with_capacity(100);
-    for _ in 0..100 {
-        match receiver.try_recv() {
-            Ok(data) => batch.push(data),
-            Err(_) => break,  // Exit the loop if there's no more data in the channel
+    loop {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        let mut batch = Vec::with_capacity(100);
+        for _ in 0..100 {
+            match receiver.try_recv() {
+                Ok(data) => batch.push(data),
+                Err(_) => break,  // Exit the loop if there's no more data in the channel
+            }
         }
-    }
-    if let Ok(mut lock) = packets.lock(){
-        append_describables(&mut lock, batch);
+        if let Ok(mut lock) = packets.lock() {
+            append_describables(&mut lock, batch);
+        }
     }
 }
 
