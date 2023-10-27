@@ -195,23 +195,16 @@ impl Layer for Ipv4Packet {
             },
         };
 
-        let payload: Option<Box<dyn Layer>> = match &packet_header.next_header.protocol_type {
-            ExtendedType::Known(IpNextHeaderProtocols::Tcp) => {
-                Some(Box::new(parse_tcp(&packet_header.payload)))
-            }
-            ExtendedType::Known(IpNextHeaderProtocols::Udp) => {
-                Some(Box::new(parse_udp(&packet_header.payload)))
-            }
-            _ => None,
-        };
+        let payload: Option<Box<dyn Layer>> = matches!(
+            &packet_header.next_header.protocol_type,
+            ExtendedType::Known(IpNextHeaderProtocols::Tcp) | ExtendedType::Known(IpNextHeaderProtocols::Udp)
+        ).then(|| Box::new(parse_udp(&packet_header.payload)) as _);
 
         self.header = packet_header;
         self.payload = payload;
     }
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
-        let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
-
         let options_string = self
             .header
             .options
@@ -220,52 +213,53 @@ impl Layer for Ipv4Packet {
             .collect::<Vec<&str>>()
             .join("\n");
 
-        map.insert("protocol".to_string(), "ipv4".to_string());
-        map.insert("version".to_string(), self.header.version_ihl.to_string());
-        map.insert("dscp".to_string(), self.header.dscp.to_string());
-        map.insert("ecn".to_string(), self.header.ecn.to_string());
-        map.insert(
-            "total_length".to_string(),
-            self.header.total_length.to_string(),
-        );
-        map.insert(
-            "identification".to_string(),
-            self.header.identification.to_string(),
-        );
-        map.insert(
-            "flags_fragment_offset".to_string(),
-            self.header.flags_fragment_offset.to_string(),
-        );
-        map.insert(
-            "time_to_live".to_string(),
-            self.header.time_to_live.to_string(),
-        );
-        map.insert(
-            "header_checksum".to_string(),
-            self.header.header_checksum.to_string(),
-        );
-        map.insert(
-            "source_address".to_string(),
-            self.header.source_address.to_string(),
-        );
-        map.insert(
-            "destination_address".to_string(),
-            self.header.destination_address.to_string(),
-        );
-        map.insert(
-            "next_header".to_string(),
-            format!("protocol : {}", self.header.next_header.protocol_name,),
-        );
-        map.insert(
-            "flags".to_string(),
-            format!(
-                "reserved : {}, dont fragment : {},  more fragment : {}",
-                self.header.flags.reserved, self.header.flags.dontfrag, self.header.flags.morefrag
+        LinkedHashMap::<String, String>::from_iter([
+            ("protocol".to_string(), "ipv4".to_string()),
+            ("version".to_string(), self.header.version_ihl.to_string()),
+            ("dscp".to_string(), self.header.dscp.to_string()),
+            ("ecn".to_string(), self.header.ecn.to_string()),
+            (
+                "total_length".to_string(),
+                self.header.total_length.to_string(),
             ),
-        );
-        map.insert("malformed".to_string(), self.header.malformed.to_string());
-        map.insert("options".to_string(), options_string);
-        map
+            (
+                "identification".to_string(),
+                self.header.identification.to_string(),
+            ),
+            (
+                "flags_fragment_offset".to_string(),
+                self.header.flags_fragment_offset.to_string(),
+            ),
+            (
+                "time_to_live".to_string(),
+                self.header.time_to_live.to_string(),
+            ),
+            (
+                "header_checksum".to_string(),
+                self.header.header_checksum.to_string(),
+            ),
+            (
+                "source_address".to_string(),
+                self.header.source_address.to_string(),
+            ),
+            (
+                "destination_address".to_string(),
+                self.header.destination_address.to_string(),
+            ),
+            (
+                "next_header".to_string(),
+                format!("protocol : {}", self.header.next_header.protocol_name,),
+            ),
+            (
+                "flags".to_string(),
+                format!(
+                    "reserved : {}, dont fragment : {},  more fragment : {}",
+                    self.header.flags.reserved, self.header.flags.dontfrag, self.header.flags.morefrag
+                ),
+            ),
+            ("malformed".to_string(), self.header.malformed.to_string()),
+            ("options".to_string(), options_string),
+        ])
     }
 
     fn get_next(&self) -> &Option<Box<dyn Layer>> {
