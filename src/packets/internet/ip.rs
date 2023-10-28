@@ -1,14 +1,14 @@
+use std::borrow::Cow;
 use crate::packets::shared_objs::{ExtendedType, ProtocolDescriptor, ProtocolType};
 use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
 };
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
+use linked_hash_map::LinkedHashMap;
 
 /*
 
@@ -197,10 +197,8 @@ impl Layer for Ipv4Packet {
 
         let payload: Option<Box<dyn Layer>> = matches!(
             &packet_header.next_header.protocol_type,
-            ExtendedType::Known(IpNextHeaderProtocols::Tcp)
-                | ExtendedType::Known(IpNextHeaderProtocols::Udp)
-        )
-        .then(|| Box::new(parse_udp(&packet_header.payload)) as _);
+            ExtendedType::Known(IpNextHeaderProtocols::Tcp) | ExtendedType::Known(IpNextHeaderProtocols::Udp)
+        ).then(|| Box::new(parse_udp(&packet_header.payload)) as _);
 
         self.header = packet_header;
         self.payload = payload;
@@ -256,9 +254,7 @@ impl Layer for Ipv4Packet {
                 "flags".to_string(),
                 format!(
                     "reserved : {}, dont fragment : {},  more fragment : {}",
-                    self.header.flags.reserved,
-                    self.header.flags.dontfrag,
-                    self.header.flags.morefrag
+                    self.header.flags.reserved, self.header.flags.dontfrag, self.header.flags.morefrag
                 ),
             ),
             ("malformed".to_string(), self.header.malformed.to_string()),
@@ -297,6 +293,7 @@ impl Layer for Ipv4Packet {
     }
 }
 
+
 /*
 
 
@@ -318,6 +315,7 @@ pub struct Ipv6Header {
     pub destination: String,
     pub version: u8,
 }
+
 
 /*
 

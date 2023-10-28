@@ -1,19 +1,15 @@
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
+use tokio;
+use std::time::Duration;
+use crossbeam::channel::Receiver;
+use crate::sniffer::LiveCapture;
+use iced::{Alignment, Application, Command, Element, executor, Length, Renderer, Subscription, Theme, time};
+use iced::application::StyleSheet;
+use iced::widget::{Button, button, Column, container, row, Row, Scrollable, scrollable, text, Text};
 use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
-use crate::sniffer::LiveCapture;
-use crossbeam::channel::Receiver;
-use iced::application::StyleSheet;
-use iced::widget::{
-    button, container, row, scrollable, text, Button, Column, Row, Scrollable, Text,
-};
-use iced::{
-    executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
-};
-use std::ops::DerefMut;
-use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use tokio;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -24,7 +20,7 @@ pub enum Message {
     PreviousPage,
     FrameSelected(i32),
     //DataReceived(Vec<Box<dyn Describable>>)
-    NoOp,
+    NoOp
 }
 
 impl Application for LiveCapture {
@@ -46,105 +42,106 @@ impl Application for LiveCapture {
         match message {
             Message::Tick => {
                 fetch_data_from_channel(self.channel.1.clone(), &mut self.captured_packets);
-            }
-            Message::Start => self.capture(),
-            Message::Stop => self.stop(),
+            },
+            Message::Start => {
+                self.capture()
+            },
+            Message::Stop => {
+                self.stop()
+            },
             Message::NextPage => {
                 //if let Ok(lock) = self.captured_packets.lock(){
                 if self.page < self.captured_packets.len() - 1 {
                     self.page += 1;
                 }
                 //}
-            }
+            },
             Message::PreviousPage => {
                 if self.page > 0 {
                     self.page -= 1;
                 }
-            }
+            },
             Message::FrameSelected(frame_id) => {
                 self.selected = Some(frame_id);
-            }
-            Message::NoOp => {}
+            },
+            Message::NoOp =>{}
         };
         Command::none()
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let mut column = Column::new()
-            .spacing(10)
+        let mut column = Column::new().spacing(10)
             .push(button("start").on_press(Message::Start))
             .push(button("stop").on_press(Message::Stop));
 
+
         // Lock once here
-        column = column.push({
-            let prev_disabled = self.page == 0;
+            column = column.push({
+                let prev_disabled = self.page == 0;
 
-            let button = Button::new(Text::new("Previous"));
-            if !prev_disabled {
-                button.on_press(Message::PreviousPage)
-            } else {
-                button
-            }
-        });
+                let button = Button::new(Text::new("Previous"));
+                if !prev_disabled {
+                    button.on_press(Message::PreviousPage)
+                } else {
+                    button
+                }
+            });
 
-        column = column.push({
-            let next_disabled = self.page + 1 >= self.captured_packets.len();
+            column = column.push({
+                let next_disabled = self.page + 1 >= self.captured_packets.len();
 
-            let button = Button::new(Text::new("Next"));
-            if !next_disabled {
-                button.on_press(Message::NextPage)
-            } else {
-                button
-            }
-        });
+                let button = Button::new(Text::new("Next"));
+                if !next_disabled {
+                    button.on_press(Message::NextPage)
+                } else {
+                    button
+                }
+            });
 
-        if let Some(data) = self.captured_packets.get(self.page) {
-            /*for item in data.iter() {
-                column = column.push(Text::new(item.get_short().info));
-            }*/
-            let scroll = scrollable(data.iter().fold(
-                Column::new().padding(13).spacing(5),
-                |scroll_adapters, frame| {
-                    let short = frame.get_description();
-                    let description = format!(
-                        "{} {} {} {} {}",
-                        short.id, short.timestamp, short.source, short.destination, short.info
-                    );
-                    scroll_adapters.push(
-                        Button::new(Text::new(description))
-                            .padding([5, 5])
-                            .width(Length::Fill)
-                            .on_press(Message::FrameSelected(frame.get_id())),
-                    )
-                },
-            ))
-            .height(Length::Fill);
-            column = column.push(scroll);
-        }
-
-        if let Some(selected_id) = self.selected {
-            if let Some(frame) = get_describable(&self.captured_packets, selected_id) {
-                let scroll = scrollable(frame.get_long().iter().fold(
+            if let Some(data) = self.captured_packets.get(self.page) {
+                /*for item in data.iter() {
+                    column = column.push(Text::new(item.get_short().info));
+                }*/
+                let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
-                    |column, map| {
-                        map.iter().fold(column, |inner_column, (key, value)| {
-                            // You can format the key and value however you want.
-                            let description = format!("{}: {}", key, value);
-                            inner_column.push(Text::new(description))
-                        })
+                    |scroll_adapters, frame| {
+                        let short = frame.get_description();
+                        let description = format!("{} {} {} {} {}", short.id, short.timestamp, short.source,short.destination, short.info);
+                        scroll_adapters.push(
+                            Button::new(Text::new(description))
+                                .padding([5, 5])
+                                .width(Length::Fill)
+                                .on_press(Message::FrameSelected(frame.get_id())),
+                        )
                     },
-                ))
-                .height(Length::Fill);
+                )).height(Length::Fill);
                 column = column.push(scroll);
             }
-        }
-        /*
-        if self.page > 0 {
-            column = column.push(Button::new(Text::new("Previous")).on_press(Message::PreviousPage));
-        }
-        if self.page + 1 < lock.len() {
-            column = column.push(Button::new(Text::new("Next")).on_press(Message::NextPage));
-        }*/
+
+            if let Some(selected_id) = self.selected {
+                if let Some(frame) = get_describable(&self.captured_packets, selected_id){
+                    let scroll = scrollable(
+                        frame.get_long().iter().fold(
+                            Column::new().padding(13).spacing(5),
+                            |column, map| {
+                                map.iter().fold(column, |inner_column, (key, value)| {
+                                    // You can format the key and value however you want.
+                                    let description = format!("{}: {}", key, value);
+                                    inner_column.push(Text::new(description))
+
+                                })
+                            },
+                        )).height(Length::Fill);
+                    column = column.push(scroll);
+                }
+            }
+            /*
+            if self.page > 0 {
+                column = column.push(Button::new(Text::new("Previous")).on_press(Message::PreviousPage));
+            }
+            if self.page + 1 < lock.len() {
+                column = column.push(Button::new(Text::new("Next")).on_press(Message::NextPage));
+            }*/
 
         column.into()
     }
@@ -156,6 +153,7 @@ impl Application for LiveCapture {
     fn style(&self) -> <Self::Theme as StyleSheet>::Style {
 
     }*/
+
 
     fn subscription(&self) -> Subscription<Self::Message> {
         time::every(Duration::from_millis(1500)).map(|_| Message::Tick)
@@ -183,20 +181,11 @@ fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
     flattened
 }
 
-fn get_describable(
-    vectors: &[Vec<Box<dyn Describable>>],
-    id_to_find: i32,
-) -> Option<&Box<dyn Describable>> {
-    vectors
-        .iter()
-        .flatten()
-        .find(|frame| frame.get_id() == id_to_find)
+fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Option<&Box<dyn Describable>> {
+    vectors.iter().flatten().find(|frame| frame.get_id() == id_to_find)
 }
 
-fn append_describables(
-    main_vector: &mut Vec<Vec<Box<dyn Describable>>>,
-    describables: Vec<Box<dyn Describable>>,
-) {
+fn append_describables(main_vector: &mut Vec<Vec<Box<dyn Describable>>>, describables: Vec<Box<dyn Describable>>) {
     if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
         main_vector.push(Vec::with_capacity(1000));
     }

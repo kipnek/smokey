@@ -1,16 +1,17 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::traits::Describable;
-use crossbeam::channel::{Receiver, SendError, Sender};
 use pcap::{Device, Linktype};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};
+use crossbeam::channel::{Receiver, Sender, SendError};
+use crate::packets::traits::Describable;
+
 
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
-    pub page: usize,
-    pub selected: Option<i32>,
-    pub channel: (Sender<Box<dyn Describable>>, Receiver<Box<dyn Describable>>),
+    pub page : usize,
+    pub selected : Option<i32>,
+    pub channel : (Sender<Box<dyn Describable>>, Receiver<Box<dyn Describable>>),
     pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
     pub stop: Arc<AtomicBool>,
 }
@@ -24,9 +25,7 @@ impl LiveCapture {
 
             //only for development
             let device = Device::lookup()
-                .and_then(|dev_result| {
-                    dev_result.ok_or_else(|| pcap::Error::PcapError("no device".to_string()))
-                })
+                .and_then(|dev_result| dev_result.ok_or_else(|| pcap::Error::PcapError("no device".to_string())))
                 .unwrap_or_else(|err| panic!("Device lookup failed: {}", err));
 
             if let Ok(mut cap) = pcap::Capture::from_device(device)
@@ -39,7 +38,7 @@ impl LiveCapture {
                         //maybe save file here?
                         break;
                     }
-                    match sender.send(Box::new(EthernetFrame::new(index, packet.data))) {
+                    match  sender.send(Box::new(EthernetFrame::new(index, packet.data))){
                         Ok(_) => {
                             index += 1;
                         }
@@ -72,9 +71,9 @@ impl LiveCapture {
     }
 }
 
-impl Default for LiveCapture {
+impl Default for LiveCapture{
     fn default() -> Self {
-        LiveCapture {
+        LiveCapture{
             interfaces: vec![],
             page: 0,
             selected: None,
