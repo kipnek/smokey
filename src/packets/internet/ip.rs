@@ -19,7 +19,7 @@ IPV4 Header
 
 
  */
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Ipv4Header {
     pub version_ihl: u8,
     pub dscp: u8,
@@ -156,7 +156,7 @@ IPv4 Packets
 
  */
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
@@ -282,6 +282,10 @@ impl Layer for Ipv4Packet {
 
     fn destination(&self) -> String {
         self.header.destination_address.clone()
+    }
+
+    fn box_clone(&self) -> Box<dyn Layer> {
+        Box::new(self.clone())
     }
 
     fn info(&self) -> String {

@@ -226,3 +226,94 @@ the different types from datatype to ensure it only parses legit ethernet etc..
    pub const ATSC_ALP: Self = Self(289);
 
 */
+
+/*
+use std::collections::HashMap;
+use std::net::IpAddr;
+
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct ConnectionKey {
+    src_ip: IpAddr,
+    dest_ip: IpAddr,
+    src_port: u16,
+    dest_port: u16,
+    protocol: String,
+}
+
+struct Connection {
+    packets: Vec<Packet>,  // Assuming you have a Packet struct defined elsewhere
+    // Other connection-specific data
+}
+
+fn main() {
+    let mut connections: HashMap<ConnectionKey, Connection> = HashMap::new();
+
+    // Example: Adding a new connection
+    let key = ConnectionKey {
+        src_ip: "192.168.1.1".parse().unwrap(),
+        dest_ip: "93.184.216.34".parse().unwrap(),
+        src_port: 12345,
+        dest_port: 80,
+        protocol: "TCP".to_string(),
+    };
+    let connection = Connection {
+        packets: vec![],  // Initialize with an empty packet list
+        // Initialize other fields as necessary
+    };
+    connections.insert(key, connection);
+
+    // Example: Accessing a connection
+    if let Some(connection) = connections.get_mut(&key) {
+        // Do something with the connection
+        println!("Found a connection with {} packets", connection.packets.len());
+    }
+}
+
+
+//comparing connection
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::cmp::Ordering;
+
+#[derive(Debug, Clone)]
+struct Connection {
+    src: String,
+    dest: String,
+}
+
+impl PartialEq for Connection {
+    fn eq(&self, other: &Self) -> bool {
+        (self.src == other.src && self.dest == other.dest) || (self.src == other.dest && self.dest == other.src)
+    }
+}
+
+impl Eq for Connection {}
+
+impl Hash for Connection {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut hasher = DefaultHasher::new();
+        let mut v = vec![&self.src, &self.dest];
+        v.sort(); // Ensure consistent ordering for hashing
+        v.hash(&mut hasher);
+        state.write_u64(hasher.finish());
+    }
+}
+
+impl PartialOrd for Connection {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Connection {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let mut v1 = vec![&self.src, &self.dest];
+        let mut v2 = vec![&other.src, &other.dest];
+        v1.sort();
+        v2.sort();
+        v1.cmp(&v2)
+    }
+}
+
+
+ */

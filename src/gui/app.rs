@@ -7,7 +7,8 @@ use crossbeam::channel::Receiver;
 use crate::sniffer::LiveCapture;
 use iced::{Alignment, Application, Command, Element, executor, Length, Renderer, Subscription, Theme, time};
 use iced::application::StyleSheet;
-use iced::widget::{Button, button, Column, container, row, Scrollable, scrollable, text, Text};
+use iced::widget::{Button, button, Column, container, row, Row, Scrollable, scrollable, text, Text};
+use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 
 #[derive(Debug, Clone)]
@@ -72,7 +73,15 @@ impl Application for LiveCapture {
         let mut column = Column::new().spacing(10);
         column = column.push(button("start").on_press(Message::Start));
         column = column.push(button("stop").on_press(Message::Stop));
+/*
+        pub id: i32,
+        pub timestamp: String,
+        pub protocol: ProtocolType,
+        pub source: String,
+        pub destination: String,
+        pub info: String,
 
+ */
 
         // Lock once here
         //if let Ok(lock) = self.captured_packets.lock() {
@@ -102,6 +111,16 @@ impl Application for LiveCapture {
                 );
             }
             if let Some(data) = self.captured_packets.get(self.page) {
+
+                let header: Element<Message> = Column::new()
+                    .push(Text::new("Id").width(iced::Length::FillPortion(100)))
+                    .push(Text::new("TimeStamp").width(iced::Length::FillPortion(100)))
+                    .push(Text::new("Protocol").width(iced::Length::FillPortion(100)))
+                    .push(Text::new("source").width(iced::Length::FillPortion(100)))
+                    .push(Text::new("destination").width(iced::Length::FillPortion(100)))
+                    .push(Text::new("info").width(iced::Length::FillPortion(100)))
+                    .spacing(5)
+                    .into();
                 let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
                     |scroll_adapters, frame| {
@@ -115,6 +134,8 @@ impl Application for LiveCapture {
                         )
                     },
                 )).height(Length::Fill);
+
+                column = column.push(header);
                 column = column.push(scroll);
             }
 
@@ -154,7 +175,7 @@ impl Application for LiveCapture {
 
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
+        time::every(Duration::from_millis(1500)).map(|_| Message::Tick)
     }
 }
 
@@ -163,6 +184,21 @@ impl Application for LiveCapture {
 helper functions
 
  */
+
+fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
+    let mut flattened = Vec::new();
+
+    for desc in descriptions {
+        flattened.push(desc.id.to_string());
+        flattened.push(desc.timestamp.to_string());
+        flattened.push(desc.protocol.to_string());
+        flattened.push(desc.source.to_string());
+        flattened.push(desc.destination.to_string());
+        flattened.push(desc.info.to_string());
+    }
+
+    flattened
+}
 
 fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Option<&Box<dyn Describable>> {
     for vector in vectors {

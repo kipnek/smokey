@@ -77,7 +77,7 @@ TCP Packet
  */
 
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct TcpPacket {
     pub header: TcpHeader,
     pub payload: Option<Box<dyn Layer>>,
@@ -161,6 +161,10 @@ impl Layer for TcpPacket {
 
     fn destination(&self) -> String {
         self.header.destination_port.to_string()
+    }
+
+    fn box_clone(&self) -> Box<dyn Layer> {
+        Box::new(self.clone())
     }
 
     fn info(&self) -> String {
