@@ -3,16 +3,12 @@ mod sniffer;
 //mod basic_traits;
 mod gui;
 
-use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use iced::Application;
-use std::io::Write;
-use std::sync::atomic::Ordering;
-use std::sync::{Arc, Mutex};
-use std::{io, panic, thread};
+
+use std::panic;
 
 fn main() -> iced::Result {
     panic::set_hook(Box::new(custom_panic_handler));

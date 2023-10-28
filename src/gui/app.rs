@@ -2,18 +2,11 @@ use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
-use iced::application::StyleSheet;
-use iced::widget::{
-    button, container, row, scrollable, text, Button, Column, Row, Scrollable, Text,
-};
-use iced::{
-    executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
-};
-use std::ops::DerefMut;
-use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
+
+use iced::widget::{button, scrollable, Button, Column, Text};
+use iced::{executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme};
+
 use std::time::Duration;
-use tokio;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -186,11 +179,11 @@ fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
 fn get_describable(
     vectors: &[Vec<Box<dyn Describable>>],
     id_to_find: i32,
-) -> Option<&Box<dyn Describable>> {
+) -> Option<&dyn Describable> {
     vectors
         .iter()
         .flatten()
-        .find(|frame| frame.get_id() == id_to_find)
+        .find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
 }
 
 fn append_describables(

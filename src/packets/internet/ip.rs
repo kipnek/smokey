@@ -6,8 +6,7 @@ use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
 };
-use std::borrow::Cow;
-use std::collections::HashMap;
+
 use std::fmt::{Debug, Formatter};
 
 /*
@@ -326,12 +325,12 @@ Helper functions
 
 
  */
-fn protocol_to_string(proto: &IpNextHeaderProtocol) -> String {
+fn protocol_to_string(proto: IpNextHeaderProtocol) -> String {
     match proto {
-        &IpNextHeaderProtocols::Ipv4 => "IPv4".to_string(),
-        &IpNextHeaderProtocols::Tcp => "Tcp".to_string(),
-        &IpNextHeaderProtocols::Udp => "Udp".to_string(),
-        &IpNextHeaderProtocols::Ipv6 => "IPv6".to_string(),
+        IpNextHeaderProtocols::Ipv4 => "IPv4".to_string(),
+        IpNextHeaderProtocols::Tcp => "Tcp".to_string(),
+        IpNextHeaderProtocols::Udp => "Udp".to_string(),
+        IpNextHeaderProtocols::Ipv6 => "IPv6".to_string(),
         _ => "Unknown".to_string(),
     }
 }
@@ -340,7 +339,7 @@ fn set_next_header(
     next_header: IpNextHeaderProtocol,
 ) -> ProtocolDescriptor<ExtendedType<IpNextHeaderProtocol>> {
     ProtocolDescriptor {
-        protocol_name: protocol_to_string(&next_header),
+        protocol_name: protocol_to_string(next_header),
         protocol_type: ExtendedType::Known(next_header),
     }
 }

@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 #[derive(Debug, Clone, Default)]
 pub struct ProtocolDescriptor<T> {
     pub protocol_name: String,

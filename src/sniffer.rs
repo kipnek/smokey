@@ -1,9 +1,9 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::traits::Describable;
-use crossbeam::channel::{Receiver, SendError, Sender};
+use crossbeam::channel::{Receiver, Sender};
 use pcap::{Device, Linktype};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{panic, thread};
 
 pub struct LiveCapture {
@@ -32,7 +32,7 @@ impl LiveCapture {
             if let Ok(mut cap) = pcap::Capture::from_device(device)
                 .and_then(|cap| cap.immediate_mode(true).promisc(true).open())
             {
-                let Linktype(cap_type) = cap.get_datalink();
+                let Linktype(_cap_type) = cap.get_datalink();
 
                 while let Ok(packet) = cap.next_packet() {
                     if stop.load(Ordering::Relaxed) {

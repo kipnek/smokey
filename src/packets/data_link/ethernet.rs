@@ -7,8 +7,7 @@ use chrono::Utc;
 use linked_hash_map::LinkedHashMap;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
-use std::borrow::Cow;
-use std::collections::HashMap;
+
 use std::default::Default;
 
 /*
@@ -34,7 +33,7 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
         proto: ExtendedType<EtherType>,
     ) -> ProtocolDescriptor<ExtendedType<EtherType>> {
         let protocol_name = match &proto {
-            ExtendedType::Known(ether_type) => set_name(ether_type),
+            &ExtendedType::Known(ether_type) => set_name(ether_type),
             ExtendedType::Malformed => "malformed".to_string(),
         };
 
@@ -187,7 +186,7 @@ impl Describable for EthernetFrame {
     }
 
     fn get_id(&self) -> i32 {
-        self.id.clone()
+        self.id
     }
 
     fn get_description(&self) -> &Description {
@@ -226,11 +225,11 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
     packet
 }
 
-fn set_name(proto: &EtherType) -> String {
+fn set_name(proto: EtherType) -> String {
     let name: String = match proto {
-        &EtherTypes::Ipv4 => "IPv4".to_string(),
-        &EtherTypes::Arp => "ARP".to_string(),
-        &EtherTypes::Ipv6 => "IPv6".to_string(),
+        EtherTypes::Ipv4 => "IPv4".to_string(),
+        EtherTypes::Arp => "ARP".to_string(),
+        EtherTypes::Ipv6 => "IPv6".to_string(),
         _ => "Unknown".to_string(),
     };
     name
