@@ -25,18 +25,13 @@ impl LiveCapture {
 
             //only for development
             let device = Device::lookup()
-                .and_then(|dev_result| match dev_result {
-                    Some(dev) => Ok(dev),
-                    None => Err(pcap::Error::PcapError("no device".to_string())),
-                })
+                .and_then(|dev_result| dev_result.ok_or_else(|| pcap::Error::PcapError("no device".to_string())))
                 .unwrap_or_else(|err| panic!("Device lookup failed: {}", err));
 
             if let Ok(mut cap) = pcap::Capture::from_device(device)
                 .and_then(|cap| cap.immediate_mode(true).promisc(true).open())
             {
-                let cap_type = match cap.get_datalink() {
-                    Linktype(link) => link,
-                };
+                let Linktype(cap_type) = cap.get_datalink();
 
                 while let Ok(packet) = cap.next_packet() {
                     if stop.load(Ordering::Relaxed) {

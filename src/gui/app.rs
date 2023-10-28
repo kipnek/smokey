@@ -70,57 +70,38 @@ impl Application for LiveCapture {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let mut column = Column::new().spacing(10);
-        column = column.push(button("start").on_press(Message::Start));
-        column = column.push(button("stop").on_press(Message::Stop));
-/*
-        pub id: i32,
-        pub timestamp: String,
-        pub protocol: ProtocolType,
-        pub source: String,
-        pub destination: String,
-        pub info: String,
+        let mut column = Column::new().spacing(10)
+            .push(button("start").on_press(Message::Start))
+            .push(button("stop").on_press(Message::Stop));
 
- */
 
         // Lock once here
-        //if let Ok(lock) = self.captured_packets.lock() {
-            let prev_disabled = self.page == 0;
+            column = column.push({
+                let prev_disabled = self.page == 0;
 
-            if !prev_disabled {
-                column = column.push(
-                    Button::new(Text::new("Previous"))
-                        .on_press(Message::PreviousPage)
-                );
-            }else{
-                column = column.push(
-                    Button::new(Text::new("Previous"))
-                );
-            }
+                let button = Button::new(Text::new("Previous"));
+                if !prev_disabled {
+                    button.on_press(Message::PreviousPage)
+                } else {
+                    button
+                }
+            });
 
+            column = column.push({
+                let next_disabled = self.page + 1 >= self.captured_packets.len();
 
-            let next_disabled = self.page + 1 >= self.captured_packets.len();
-            if !next_disabled {
-                column = column.push(
-                    Button::new(Text::new("Next"))
-                        .on_press(Message::NextPage)
-                );
-            }else{
-                column = column.push(
-                    Button::new(Text::new("Next"))
-                );
-            }
+                let button = Button::new(Text::new("Next"));
+                if !next_disabled {
+                    button.on_press(Message::NextPage)
+                } else {
+                    button
+                }
+            });
+
             if let Some(data) = self.captured_packets.get(self.page) {
-
-                let header: Element<Message> = Column::new()
-                    .push(Text::new("Id").width(iced::Length::FillPortion(100)))
-                    .push(Text::new("TimeStamp").width(iced::Length::FillPortion(100)))
-                    .push(Text::new("Protocol").width(iced::Length::FillPortion(100)))
-                    .push(Text::new("source").width(iced::Length::FillPortion(100)))
-                    .push(Text::new("destination").width(iced::Length::FillPortion(100)))
-                    .push(Text::new("info").width(iced::Length::FillPortion(100)))
-                    .spacing(5)
-                    .into();
+                /*for item in data.iter() {
+                    column = column.push(Text::new(item.get_short().info));
+                }*/
                 let scroll = scrollable(data.iter().fold(
                     Column::new().padding(13).spacing(5),
                     |scroll_adapters, frame| {
@@ -134,8 +115,6 @@ impl Application for LiveCapture {
                         )
                     },
                 )).height(Length::Fill);
-
-                column = column.push(header);
                 column = column.push(scroll);
             }
 
@@ -156,14 +135,16 @@ impl Application for LiveCapture {
                     column = column.push(scroll);
                 }
             }
-        //} else {
-            // Handle the lock error if needed. For instance, you could display an error message:
-            // column = column.push(Text::new("Failed to lock captured packets."));
-        //}
+            /*
+            if self.page > 0 {
+                column = column.push(Button::new(Text::new("Previous")).on_press(Message::PreviousPage));
+            }
+            if self.page + 1 < lock.len() {
+                column = column.push(Button::new(Text::new("Next")).on_press(Message::NextPage));
+            }*/
 
         column.into()
     }
-
 
     /*fn theme(&self) -> Self::Theme {
 
@@ -201,12 +182,7 @@ fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
 }
 
 fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Option<&Box<dyn Describable>> {
-    for vector in vectors {
-        if let Some(frame) = vector.iter().find(|frame| frame.get_id() == id_to_find) {
-            return Some(frame);
-        }
-    }
-    None
+    vectors.iter().flatten().find(|frame| frame.get_id() == id_to_find)
 }
 
 fn append_describables(main_vector: &mut Vec<Vec<Box<dyn Describable>>>, describables: Vec<Box<dyn Describable>>) {

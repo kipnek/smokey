@@ -176,13 +176,13 @@ impl Describable for EthernetFrame {
 
     fn get_long(&self) -> Vec<LinkedHashMap<String, String>> {
         let mut vec_map = vec![self.get_summary()];
-        let mut current_layer: Option<Box<&dyn Layer>> = Some(Box::new(self));
+        let mut current_layer: Option<&dyn Layer> = Some(self);
         while let Some(layer) = &current_layer {
             vec_map.push(layer.get_summary());
             current_layer = layer
                 .get_next()
                 .as_ref()
-                .map(|boxed_layer| Box::new(boxed_layer.as_ref() as &dyn Layer));
+                .map(|boxed_layer| boxed_layer.as_ref());
         }
 
         vec_map
