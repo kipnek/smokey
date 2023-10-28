@@ -80,12 +80,6 @@ fn find_udp_packets(frames: &[EthernetFrame]) -> Vec<&EthernetFrame> {
 }
  */
 fn get_duration_from_string(timestamp: &str) -> Option<Duration> {
-    let parsed_time = timestamp.parse::<DateTime<Utc>>();
-    match parsed_time {
-        Ok(time) => {
-            let now = Utc::now();
-            Some(now.signed_duration_since(time))
-        }
-        Err(_) => None,
-    }
+    timestamp.parse::<DateTime<Utc>>().ok()
+        .map(|time| Utc::now().signed_duration_since(time))
 }

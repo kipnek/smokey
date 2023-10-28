@@ -70,38 +70,35 @@ impl Application for LiveCapture {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let mut column = Column::new().spacing(10);
-        column = column.push(button("start").on_press(Message::Start));
-        column = column.push(button("stop").on_press(Message::Stop));
+        let mut column = Column::new().spacing(10)
+            .push(button("start").on_press(Message::Start))
+            .push(button("stop").on_press(Message::Stop));
 
 
         // Lock once here
         if let Ok(lock) = self.captured_packets.lock() {
-            let prev_disabled = self.page == 0;
+            column = column.push({
+                let prev_disabled = self.page == 0;
 
-            if !prev_disabled {
-                column = column.push(
-                    Button::new(Text::new("Previous"))
-                        .on_press(Message::PreviousPage)
-                );
-            }else{
-                column = column.push(
-                    Button::new(Text::new("Previous"))
-                );
-            }
+                let button = Button::new(Text::new("Previous"));
+                if !prev_disabled {
+                    button.on_press(Message::PreviousPage)
+                } else {
+                    button
+                }
+            });
 
+            column = column.push({
+                let next_disabled = self.page + 1 >= lock.len();
 
-            let next_disabled = self.page + 1 >= lock.len();
-            if !next_disabled {
-                column = column.push(
-                    Button::new(Text::new("Next"))
-                        .on_press(Message::NextPage)
-                );
-            }else{
-                column = column.push(
-                    Button::new(Text::new("Next"))
-                );
-            }
+                let button = Button::new(Text::new("Next"));
+                if !next_disabled {
+                    button.on_press(Message::NextPage)
+                } else {
+                    button
+                }
+            });
+
             if let Some(data) = lock.get(self.page) {
                 /*for item in data.iter() {
                     column = column.push(Text::new(item.get_short().info));
@@ -169,12 +166,7 @@ impl Application for LiveCapture {
 }
 
 fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Option<&Box<dyn Describable>> {
-    for vector in vectors {
-        if let Some(frame) = vector.iter().find(|frame| frame.get_id() == id_to_find) {
-            return Some(frame);
-        }
-    }
-    None
+    vectors.iter().flatten().find(|frame| frame.get_id() == id_to_find)
 }
 
 /*
