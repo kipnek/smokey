@@ -14,7 +14,7 @@ pub struct Summary {
     pub info: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Description {
     pub id: i32,
     pub timestamp: String,
@@ -36,7 +36,7 @@ impl Default for Description{
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ProtocolType {
     Ethernet,
     Ipv4,
@@ -45,6 +45,19 @@ pub enum ProtocolType {
     Unknown,
     // ... other protocols
 }
+
+impl ToString for ProtocolType {
+    fn to_string(&self) -> String {
+        match self {
+            ProtocolType::Tcp => "TCP".to_string(),
+            ProtocolType::Udp => "UDP".to_string(),
+            ProtocolType::Ipv4 => "Ipv4".to_string(),
+            ProtocolType::Ethernet => "Ethernet".to_string(),
+            ProtocolType::Unknown => "Unknown".to_string(),
+        }
+    }
+}
+
 
 #[derive(Default, Clone, Debug)]
 pub enum ExtendedType<T> {

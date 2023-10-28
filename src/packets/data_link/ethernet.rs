@@ -66,7 +66,7 @@ Ethernet Frame
 
  */
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct EthernetFrame {
     pub id: i32,
     pub timestamp: String,
@@ -145,6 +145,10 @@ impl Layer for EthernetFrame {
     fn destination(&self) -> String {
 
         self.header.destination_mac.clone()
+    }
+
+    fn box_clone(&self) -> Box<dyn Layer> {
+        Box::new(self.clone())
     }
 
     fn info(&self) -> String {

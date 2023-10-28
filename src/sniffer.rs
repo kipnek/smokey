@@ -3,22 +3,23 @@ use pcap::{Device, Linktype};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{panic, thread};
+use crossbeam::channel::{Receiver, Sender, SendError};
 use crate::packets::traits::Describable;
 
-#[derive(Default)]
+
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page : usize,
     pub selected : Option<i32>,
-    pub captured_packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>,
+    pub channel : (Sender<Box<dyn Describable>>, Receiver<Box<dyn Describable>>),
+    pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
     pub stop: Arc<AtomicBool>,
 }
 
 impl LiveCapture {
     pub fn capture(&mut self) {
         let stop = self.stop.clone();
-        let vec_deque = self.captured_packets.clone();
-        let mut vec_indexer = 0;
+        let sender = self.channel.0.clone();
         thread::spawn(move || {
             let mut index = 0;
 
@@ -34,8 +35,18 @@ impl LiveCapture {
 
                 while let Ok(packet) = cap.next_packet() {
                     if stop.load(Ordering::Relaxed) {
+                        //maybe save file here?
                         break;
                     }
+                    match  sender.send(Box::new(EthernetFrame::new(index, packet.data))){
+                        Ok(_) => {
+                            index += 1;
+                        }
+                        Err(_) => {
+                            println!("log error for sending in sniffer")
+                        }
+                    }
+                    /*
                     if let Ok(mut buffer_lock) = vec_deque.lock() {
                         if buffer_lock[buffer_lock.len() - 1].len() >= 1000 {
                             buffer_lock.push(vec![]);
@@ -47,16 +58,29 @@ impl LiveCapture {
                             buffer_lock[vec_indexer].push(Box::new(EthernetFrame::new(index, packet.data)));
                             index += 1;
                         }
-                    }
+                    }*/
                 }
                 stop.store(false, Ordering::Release);
-                drop(vec_deque);
+                //drop(vec_deque);
             }
         });
     }
 
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
+    }
+}
+
+impl Default for LiveCapture{
+    fn default() -> Self {
+        LiveCapture{
+            interfaces: vec![],
+            page: 0,
+            selected: None,
+            channel: crossbeam::channel::unbounded::<Box<dyn Describable>>(),
+            captured_packets: vec![vec![]],
+            stop: Arc::new(Default::default()),
+        }
     }
 }
 
@@ -197,3 +221,94 @@ the different types from datatype to ensure it only parses legit ethernet etc..
    pub const ATSC_ALP: Self = Self(289);
 
 */
+
+/*
+use std::collections::HashMap;
+use std::net::IpAddr;
+
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct ConnectionKey {
+    src_ip: IpAddr,
+    dest_ip: IpAddr,
+    src_port: u16,
+    dest_port: u16,
+    protocol: String,
+}
+
+struct Connection {
+    packets: Vec<Packet>,  // Assuming you have a Packet struct defined elsewhere
+    // Other connection-specific data
+}
+
+fn main() {
+    let mut connections: HashMap<ConnectionKey, Connection> = HashMap::new();
+
+    // Example: Adding a new connection
+    let key = ConnectionKey {
+        src_ip: "192.168.1.1".parse().unwrap(),
+        dest_ip: "93.184.216.34".parse().unwrap(),
+        src_port: 12345,
+        dest_port: 80,
+        protocol: "TCP".to_string(),
+    };
+    let connection = Connection {
+        packets: vec![],  // Initialize with an empty packet list
+        // Initialize other fields as necessary
+    };
+    connections.insert(key, connection);
+
+    // Example: Accessing a connection
+    if let Some(connection) = connections.get_mut(&key) {
+        // Do something with the connection
+        println!("Found a connection with {} packets", connection.packets.len());
+    }
+}
+
+
+//comparing connection
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::cmp::Ordering;
+
+#[derive(Debug, Clone)]
+struct Connection {
+    src: String,
+    dest: String,
+}
+
+impl PartialEq for Connection {
+    fn eq(&self, other: &Self) -> bool {
+        (self.src == other.src && self.dest == other.dest) || (self.src == other.dest && self.dest == other.src)
+    }
+}
+
+impl Eq for Connection {}
+
+impl Hash for Connection {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut hasher = DefaultHasher::new();
+        let mut v = vec![&self.src, &self.dest];
+        v.sort(); // Ensure consistent ordering for hashing
+        v.hash(&mut hasher);
+        state.write_u64(hasher.finish());
+    }
+}
+
+impl PartialOrd for Connection {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Connection {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let mut v1 = vec![&self.src, &self.dest];
+        let mut v2 = vec![&other.src, &other.dest];
+        v1.sort();
+        v2.sort();
+        v1.cmp(&v2)
+    }
+}
+
+
+ */

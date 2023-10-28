@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use linked_hash_map::LinkedHashMap;
 
-pub trait Layer: Send + Debug {
+pub trait Layer: Send + Sync + Debug {
     fn deserialize(&mut self, packet: &[u8]);
 
     fn get_summary(&self) -> LinkedHashMap<String, String>;
@@ -18,12 +18,20 @@ pub trait Layer: Send + Debug {
     fn source(&self) -> String;
     fn destination(&self) -> String;
 
+    fn box_clone(&self) -> Box<dyn Layer>;
+
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_string()
     }
 }
 
-pub trait Describable: Send + Debug + Layer {
+impl Clone for Box<dyn Layer> {
+    fn clone(&self) -> Self {
+        self.box_clone()
+    }
+}
+
+pub trait Describable: Send + Sync + Debug + Layer{
     fn get_short(&self) -> Description;
 
     fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;

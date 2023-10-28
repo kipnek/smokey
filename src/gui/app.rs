@@ -1,10 +1,14 @@
+use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
+use tokio;
 use std::time::Duration;
+use crossbeam::channel::Receiver;
 use crate::sniffer::LiveCapture;
 use iced::{Alignment, Application, Command, Element, executor, Length, Renderer, Subscription, Theme, time};
 use iced::application::StyleSheet;
-use iced::widget::{Button, button, Column, container, row, Scrollable, scrollable, text, Text};
+use iced::widget::{Button, button, Column, container, row, Row, Scrollable, scrollable, text, Text};
+use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 
 #[derive(Debug, Clone)]
@@ -14,7 +18,9 @@ pub enum Message {
     Stop,
     NextPage,
     PreviousPage,
-    FrameSelected(i32)
+    FrameSelected(i32),
+    //DataReceived(Vec<Box<dyn Describable>>)
+    NoOp
 }
 
 impl Application for LiveCapture {
@@ -24,15 +30,8 @@ impl Application for LiveCapture {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let app = LiveCapture {
-            interfaces: Vec::new(), // or some default interfaces
-            page: 0,
-            selected: None,
-            captured_packets: Arc::new(Mutex::new(vec![vec![]])),
-            stop: Arc::new(AtomicBool::new(false)),
-        };
-
-        (app, iced::Command::none())
+        let app = LiveCapture::default();
+        (app, iced::Command::perform(async {}, |_| Message::Tick))
     }
 
     fn title(&self) -> String {
@@ -42,7 +41,7 @@ impl Application for LiveCapture {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::Tick => {
-
+                fetch_data_from_channel(self.channel.1.clone(), &mut self.captured_packets);
             },
             Message::Start => {
                 self.capture()
@@ -51,21 +50,22 @@ impl Application for LiveCapture {
                 self.stop()
             },
             Message::NextPage => {
-                if let Ok(lock) = self.captured_packets.lock(){
-                    if self.page < lock.len() - 1 {
-                        self.page += 1;
-                    }
+                //if let Ok(lock) = self.captured_packets.lock(){
+                if self.page < self.captured_packets.len() - 1 {
+                    self.page += 1;
                 }
+                //}
             },
             Message::PreviousPage => {
                 if self.page > 0 {
                     self.page -= 1;
                 }
             },
-            Message::FrameSelected(frame_id) =>{
-                 self.selected = Some(frame_id);
+            Message::FrameSelected(frame_id) => {
+                self.selected = Some(frame_id);
             },
-        }
+            Message::NoOp =>{}
+        };
         Command::none()
     }
 
@@ -76,7 +76,6 @@ impl Application for LiveCapture {
 
 
         // Lock once here
-        if let Ok(lock) = self.captured_packets.lock() {
             column = column.push({
                 let prev_disabled = self.page == 0;
 
@@ -89,7 +88,7 @@ impl Application for LiveCapture {
             });
 
             column = column.push({
-                let next_disabled = self.page + 1 >= lock.len();
+                let next_disabled = self.page + 1 >= self.captured_packets.len();
 
                 let button = Button::new(Text::new("Next"));
                 if !next_disabled {
@@ -99,7 +98,7 @@ impl Application for LiveCapture {
                 }
             });
 
-            if let Some(data) = lock.get(self.page) {
+            if let Some(data) = self.captured_packets.get(self.page) {
                 /*for item in data.iter() {
                     column = column.push(Text::new(item.get_short().info));
                 }*/
@@ -120,7 +119,7 @@ impl Application for LiveCapture {
             }
 
             if let Some(selected_id) = self.selected {
-                if let Some(frame) = get_describable(&lock, selected_id){
+                if let Some(frame) = get_describable(&self.captured_packets, selected_id){
                     let scroll = scrollable(
                         frame.get_long().iter().fold(
                             Column::new().padding(13).spacing(5),
@@ -143,14 +142,9 @@ impl Application for LiveCapture {
             if self.page + 1 < lock.len() {
                 column = column.push(Button::new(Text::new("Next")).on_press(Message::NextPage));
             }*/
-        } else {
-            // Handle the lock error if needed. For instance, you could display an error message:
-            // column = column.push(Text::new("Failed to lock captured packets."));
-        }
 
         column.into()
     }
-
 
     /*fn theme(&self) -> Self::Theme {
 
@@ -160,14 +154,89 @@ impl Application for LiveCapture {
 
     }*/
 
+
     fn subscription(&self) -> Subscription<Self::Message> {
-        time::every(Duration::from_millis(1000)).map(|_| Message::Tick)
+        time::every(Duration::from_millis(1500)).map(|_| Message::Tick)
     }
+}
+
+/*
+
+helper functions
+
+ */
+
+fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
+    let mut flattened = Vec::new();
+
+    for desc in descriptions {
+        flattened.push(desc.id.to_string());
+        flattened.push(desc.timestamp.to_string());
+        flattened.push(desc.protocol.to_string());
+        flattened.push(desc.source.to_string());
+        flattened.push(desc.destination.to_string());
+        flattened.push(desc.info.to_string());
+    }
+
+    flattened
 }
 
 fn get_describable(vectors: &[Vec<Box<dyn Describable>>], id_to_find: i32) -> Option<&Box<dyn Describable>> {
     vectors.iter().flatten().find(|frame| frame.get_id() == id_to_find)
 }
+
+fn append_describables(main_vector: &mut Vec<Vec<Box<dyn Describable>>>, describables: Vec<Box<dyn Describable>>) {
+    if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
+        main_vector.push(Vec::with_capacity(1000));
+    }
+
+    let last_vector = main_vector.last_mut().unwrap();
+
+    let available_space = 1000 - last_vector.len();
+    let items_to_append = std::cmp::min(describables.len(), available_space);
+
+    let mut iter = describables.into_iter();
+    for item in iter.by_ref().take(items_to_append) {
+        last_vector.push(item);
+    }
+
+    let leftover_describables: Vec<_> = iter.collect();
+
+    if !leftover_describables.is_empty() {
+        append_describables(main_vector, leftover_describables);
+    }
+}
+
+fn fetch_data_from_channel(
+    receiver: Receiver<Box<dyn Describable>>,
+    packets: &mut Vec<Vec<Box<dyn Describable>>>,
+) {
+    if packets.is_empty() || packets.last().unwrap().len() == 1000 {
+        packets.push(Vec::with_capacity(1000));
+    }
+
+    let last_vector = packets.last_mut().unwrap();
+    let limit = 100.min(1000 - last_vector.len());
+    last_vector.extend(receiver.try_iter().take(limit));
+}
+
+/*
+async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>) {
+    loop {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        let mut batch = Vec::with_capacity(100);
+        for _ in 0..100 {
+            match receiver.try_recv() {
+                Ok(data) => batch.push(data),
+                Err(_) => break,
+            }
+        }
+        if let Ok(mut lock) = packets.lock() {
+            append_describables(&mut lock, batch);
+        }
+    }
+}
+*/
 
 /*
 //this is just boilerplate for the cache

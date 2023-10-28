@@ -19,7 +19,9 @@ libwifi = "0.3.1"
 ieee80211 = {git="https://github.com/SpiralP/rust-ieee80211.git", branch = "master"}
 linked-hash-map = "0.5"
 iced = { version = "0.10.0", features = ["canvas", "tokio", "debug"] }
-tokio = { version = "1.0", features = ["sync"] }
+crossbeam = "0.8.2"
+tokio = { version = "1", features = ["full"] }
+iced_flatlist = {git = "https://github.com/luizvidoto/iced-flatlist.git", branch = "master"}
 
 [profile.release]
 debug = true

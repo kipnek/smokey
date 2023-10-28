@@ -47,7 +47,7 @@ UDP Packet
  */
 
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct UdpPacket {
     pub header: UdpHeader,
     pub payload: Option<Box<dyn Layer>>,
@@ -102,6 +102,10 @@ impl Layer for UdpPacket {
 
     fn destination(&self) -> String {
         self.header.destination_port.to_string()
+    }
+
+    fn box_clone(&self) -> Box<dyn Layer> {
+        Box::new(self.clone())
     }
 
     fn info(&self) -> String {
