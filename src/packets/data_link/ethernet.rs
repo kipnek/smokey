@@ -1,15 +1,15 @@
+use std::borrow::Cow;
 use crate::packets::{
     internet::ip::Ipv4Packet,
     shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType},
     traits::{Describable, Layer, SetProtocolDescriptor},
 };
 use chrono::Utc;
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::default::Default;
+use linked_hash_map::LinkedHashMap;
 
 /*
 
@@ -71,7 +71,7 @@ pub struct EthernetFrame {
     pub id: i32,
     pub timestamp: String,
     pub header: EthernetHeader,
-    pub description: Description,
+    pub description : Description,
     pub payload: Option<Box<dyn Layer>>,
 }
 
@@ -143,6 +143,7 @@ impl Layer for EthernetFrame {
     }
 
     fn destination(&self) -> String {
+
         self.header.destination_mac.clone()
     }
 
@@ -157,6 +158,7 @@ impl Layer for EthernetFrame {
 
 impl Describable for EthernetFrame {
     fn get_short(&self) -> Description {
+
         let layer: &dyn Layer = match self.payload.as_ref() {
             Some(payload) => get_innermost_layer(payload.as_ref()),
             None => self as &dyn Layer,
