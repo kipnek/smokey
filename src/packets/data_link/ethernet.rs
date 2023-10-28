@@ -32,8 +32,8 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
     fn set_proto_descriptor(
         proto: ExtendedType<EtherType>,
     ) -> ProtocolDescriptor<ExtendedType<EtherType>> {
-        let protocol_name = match &proto {
-            &ExtendedType::Known(ether_type) => set_name(ether_type),
+        let protocol_name = match proto {
+            ExtendedType::Known(ether_type) => set_name(ether_type),
             ExtendedType::Malformed => "malformed".to_string(),
         };
 
