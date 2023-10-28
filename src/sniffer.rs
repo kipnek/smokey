@@ -48,12 +48,6 @@ impl LiveCapture {
                         }
                     }
                     /*
-                    if let Ok(mut buffer_lock) = vec_deque.lock() {
-                        if buffer_lock[buffer_lock.len() - 1].len() >= 1000 {
-                            buffer_lock.push(vec![]);
-                            vec_indexer += 1;
-                        }
-
                         //makes sure it is an ethernet capture as opposed to wifi
                         if cap_type == 1 {
                             buffer_lock[vec_indexer].push(Box::new(EthernetFrame::new(index, packet.data)));
