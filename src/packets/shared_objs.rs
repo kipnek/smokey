@@ -23,12 +23,12 @@ pub struct Description {
     pub destination: String,
     pub info: String,
 }
-impl Default for Description{
+impl Default for Description {
     fn default() -> Self {
         Description {
             id: 0,
             timestamp: String::new(),
-            protocol: ProtocolType::Unknown,  // Assuming ProtocolType also implements Default
+            protocol: ProtocolType::Unknown, // Assuming ProtocolType also implements Default
             source: String::new(),
             destination: String::new(),
             info: String::new(),
@@ -57,7 +57,6 @@ impl ToString for ProtocolType {
         }
     }
 }
-
 
 #[derive(Default, Clone, Debug)]
 pub enum ExtendedType<T> {
