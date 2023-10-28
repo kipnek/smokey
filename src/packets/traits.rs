@@ -1,7 +1,6 @@
 use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
 use linked_hash_map::LinkedHashMap;
-use std::borrow::Cow;
-use std::collections::HashMap;
+
 use std::fmt::Debug;
 
 pub trait Layer: Send + Sync + Debug {

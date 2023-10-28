@@ -2,8 +2,6 @@ use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use linked_hash_map::LinkedHashMap;
 use pnet::packet::Packet;
-use std::borrow::Cow;
-use std::collections::HashMap;
 
 /*
 
