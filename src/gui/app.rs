@@ -185,26 +185,20 @@ fn get_describable(
 
 fn append_describables(
     main_vector: &mut Vec<Vec<Box<dyn Describable>>>,
-    describables: Vec<Box<dyn Describable>>,
+    mut describables: Vec<Box<dyn Describable>>,
 ) {
     if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
         main_vector.push(Vec::with_capacity(1000));
     }
 
     let last_vector = main_vector.last_mut().unwrap();
+    let items_to_append = describables.len().min(1000 - last_vector.len());
+    last_vector.extend(describables.drain(0..items_to_append));
 
-    let available_space = 1000 - last_vector.len();
-    let items_to_append = std::cmp::min(describables.len(), available_space);
-
-    let mut iter = describables.into_iter();
-    for item in iter.by_ref().take(items_to_append) {
-        last_vector.push(item);
-    }
-
-    let leftover_describables: Vec<_> = iter.collect();
-
-    if !leftover_describables.is_empty() {
-        append_describables(main_vector, leftover_describables);
+    while !describables.is_empty() {
+        let mut new_vec = Vec::with_capacity(1000);
+        new_vec.extend(describables.drain(0..describables.len().min(1000)));
+        main_vector.push(new_vec);
     }
 }
 

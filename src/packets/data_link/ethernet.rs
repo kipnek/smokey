@@ -210,18 +210,16 @@ helper functions
  */
 
 //might be in another trait
-fn get_innermost_info(layer: &dyn Layer) -> (ProtocolType, String) {
-    match layer.get_next() {
-        Some(next) => get_innermost_info(next),
-        None => (layer.protocol_type(), layer.info()),
-    }
+fn get_innermost_info(mut layer: &dyn Layer) -> (ProtocolType, String) {
+    layer = get_innermost_layer(layer);
+    (layer.protocol_type(), layer.info())
 }
 
-fn get_innermost_layer(layer: &dyn Layer) -> &dyn Layer {
-    match layer.get_next() {
-        Some(next) => get_innermost_layer(next),
-        None => layer,
+fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
+    while let Some(next) = layer.get_next() {
+        layer = next;
     }
+    layer
 }
 
 fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
