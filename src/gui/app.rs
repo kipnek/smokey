@@ -3,7 +3,7 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
 
-use iced::widget::{button, row, scrollable, Button, Column, Scrollable, Text};
+use iced::widget::{self, button, row, scrollable, Button, Column, Scrollable, Text};
 use iced::{
     executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
 };
@@ -35,7 +35,7 @@ impl Application for LiveCapture {
     }
 
     fn title(&self) -> String {
-        "cnote".to_string()
+        "cnote".to_owned()
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
@@ -66,66 +66,58 @@ impl Application for LiveCapture {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let mut column = Column::new()
-            .spacing(10)
-            .push(button("start").on_press(Message::Start))
-            .push(button("stop").on_press(Message::Stop));
+        let mut column = Column::with_children(vec![
+            button("Start").on_press(Message::Start).into(),
+            button("Stop").on_press(Message::Stop).into(),
+            {
+                let prev_disabled = self.page == 0;
 
-        // Lock once here
-        column = column.push({
-            let prev_disabled = self.page == 0;
+                let button = Button::new("Previous");
+                if !prev_disabled {
+                    button.on_press(Message::PreviousPage)
+                } else {
+                    button
+                }
+                .into()
+            },
+            {
+                let next_disabled = self.page + 1 >= self.captured_packets.len();
 
-            let button = Button::new(Text::new("Previous"));
-            if !prev_disabled {
-                button.on_press(Message::PreviousPage)
-            } else {
-                button
-            }
-        });
-
-        column = column.push({
-            let next_disabled = self.page + 1 >= self.captured_packets.len();
-
-            let button = Button::new(Text::new("Next"));
-            if !next_disabled {
-                button.on_press(Message::NextPage)
-            } else {
-                button
-            }
-        });
+                let button = Button::new("Next");
+                if !next_disabled {
+                    button.on_press(Message::NextPage)
+                } else {
+                    button
+                }
+                .into()
+            },
+        ])
+        .spacing(10);
 
         if let Some(data) = self.captured_packets.get(self.page) {
             /*for item in data.iter() {
                 column = column.push(Text::new(item.get_short().info));
             }*/
-            let scroll = scrollable(data.iter().fold(
-                Column::new().padding(5).spacing(5).width(Length::Fill),
-                |scroll_adapters, frame| {
-                    let short = frame.get_description();
-                    let view = short.view();
-                    scroll_adapters.push(view)
-                },
-            ))
-            .height(Length::Fill)
-            .width(Length::Fill);
+            let scroll_children = { data.iter() }
+                .map(|frame| frame.get_description().view())
+                .collect();
+
+            let scroll = scrollable(widget::column(scroll_children).padding(13).spacing(5))
+                .height(Length::Fill)
+                .width(Length::Fill);
+
             column = column.push(scroll);
         }
 
-        if let Some(selected_id) = self.selected {
-            if let Some(frame) = get_describable(&self.captured_packets, selected_id) {
-                let scroll = scrollable(frame.get_long().iter().fold(
-                    Column::new().padding(13).spacing(5),
-                    |column, map| {
-                        map.iter().fold(column, |inner_column, (key, value)| {
-                            // You can format the key and value however you want.
-                            let description = format!("{}: {}", key, value);
-                            inner_column.push(Text::new(description))
-                        })
-                    },
-                ))
+        if let Some(frame) = { self.selected }
+            .and_then(|selected_id| get_describable(&self.captured_packets, selected_id))
+        {
+            let children = { frame.get_long().iter().flatten() }
+                .map(|(key, value)| Text::new(format!("{}: {}", key, value)).into())
+                .collect();
+            let scroll = scrollable(Column::with_children(children).padding(13).spacing(5))
                 .height(Length::Fill);
-                column = column.push(scroll);
-            }
+            column = column.push(scroll);
         }
 
         column.into()
@@ -167,52 +159,44 @@ helper functions
  */
 
 fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
-    let mut flattened = Vec::new();
-
-    for desc in descriptions {
-        flattened.push(desc.id.to_string());
-        flattened.push(desc.timestamp.to_string());
-        flattened.push(desc.protocol.to_string());
-        flattened.push(desc.source.to_string());
-        flattened.push(desc.destination.to_string());
-        flattened.push(desc.info.to_string());
-    }
-
-    flattened
+    { descriptions.into_iter() }
+        .flat_map(|desc| {
+            [
+                desc.id.to_string(),
+                desc.timestamp.clone(),
+                desc.protocol.to_string(),
+                desc.source.clone(),
+                desc.destination.clone(),
+                desc.info.clone(),
+            ]
+        })
+        .collect()
 }
 
 fn get_describable(
     vectors: &[Vec<Box<dyn Describable>>],
     id_to_find: i32,
 ) -> Option<&dyn Describable> {
-    vectors
-        .iter()
-        .flatten()
+    { vectors.iter().flatten() }
         .find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
 }
 
 fn append_describables(
     main_vector: &mut Vec<Vec<Box<dyn Describable>>>,
-    describables: Vec<Box<dyn Describable>>,
+    mut describables: Vec<Box<dyn Describable>>,
 ) {
     if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
         main_vector.push(Vec::with_capacity(1000));
     }
 
     let last_vector = main_vector.last_mut().unwrap();
+    let items_to_append = describables.len().min(1000 - last_vector.len());
+    last_vector.extend(describables.drain(0..items_to_append));
 
-    let available_space = 1000 - last_vector.len();
-    let items_to_append = std::cmp::min(describables.len(), available_space);
-
-    let mut iter = describables.into_iter();
-    for item in iter.by_ref().take(items_to_append) {
-        last_vector.push(item);
-    }
-
-    let leftover_describables: Vec<_> = iter.collect();
-
-    if !leftover_describables.is_empty() {
-        append_describables(main_vector, leftover_describables);
+    while !describables.is_empty() {
+        let mut new_vec = Vec::with_capacity(1000);
+        new_vec.extend(describables.drain(0..describables.len().min(1000)));
+        main_vector.push(new_vec);
     }
 }
 

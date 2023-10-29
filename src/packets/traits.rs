@@ -8,7 +8,7 @@ pub trait Layer: Send + Sync + Debug {
 
     fn get_summary(&self) -> LinkedHashMap<String, String>;
 
-    fn get_next(&self) -> &Option<Box<dyn Layer>>;
+    fn get_next(&self) -> Option<&dyn Layer>;
 
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Unknown // or a suitable default
@@ -20,7 +20,7 @@ pub trait Layer: Send + Sync + Debug {
     fn box_clone(&self) -> Box<dyn Layer>;
 
     fn info(&self) -> String {
-        "Unknown protocol, info not available".to_string()
+        "Unknown protocol, info not available".to_owned()
     }
 }
 

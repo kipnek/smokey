@@ -65,25 +65,24 @@ impl Layer for UdpPacket {
     }
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
-        let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
-        map.insert("protocol".to_string(), "udp".to_string());
-        map.insert(
-            "source_port".to_string(),
-            self.header.source_port.to_string(),
-        );
-        map.insert(
-            "destination_port".to_string(),
-            self.header.destination_port.to_string(),
-        );
-        map.insert("length".to_string(), self.header.length.to_string());
-        map.insert("checksum".to_string(), self.header.checksum.to_string());
-        map.insert("malformed".to_string(), self.header.malformed.to_string());
-
-        map
+        LinkedHashMap::<String, String>::from_iter([
+            ("protocol".to_owned(), "udp".to_owned()),
+            (
+                "source_port".to_owned(),
+                self.header.source_port.to_string(),
+            ),
+            (
+                "destination_port".to_owned(),
+                self.header.destination_port.to_string(),
+            ),
+            ("length".to_owned(), self.header.length.to_string()),
+            ("checksum".to_owned(), self.header.checksum.to_string()),
+            ("malformed".to_owned(), self.header.malformed.to_string()),
+        ])
     }
 
-    fn get_next(&self) -> &Option<Box<dyn Layer>> {
-        &self.payload
+    fn get_next(&self) -> Option<&dyn Layer> {
+        self.payload.as_deref()
     }
 
     fn protocol_type(&self) -> ProtocolType {
