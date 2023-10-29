@@ -201,7 +201,7 @@ fn append_describables(
 }
 
 fn fetch_data_from_channel(
-    receiver: Receiver<Box<dyn Describable>>,
+    receiver: &mut Receiver<Box<dyn Describable>>,
     packets: &mut Vec<Vec<Box<dyn Describable>>>,
 ) {
     if packets.is_empty() || packets.last().unwrap().len() == 1000 {
