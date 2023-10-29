@@ -115,19 +115,19 @@ impl Layer for EthernetFrame {
     }
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
-        let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
-        map.insert("protocol".to_owned(), "ethernet".to_owned());
-        map.insert("Source Mac".to_owned(), self.header.source_mac.clone());
-        map.insert(
-            "Destination Mac".to_owned(),
-            self.header.destination_mac.clone(),
-        );
-        map.insert(
-            "EtherType".to_owned(),
-            self.header.ether_type.protocol_name.clone(),
-        );
-        map.insert("malformed".to_owned(), self.header.malformed.to_string());
-        map
+        LinkedHashMap::<String, String>::from_iter([
+            ("protocol".to_owned(), "ethernet".to_owned()),
+            ("Source Mac".to_owned(), self.header.source_mac.clone()),
+            (
+                "Destination Mac".to_owned(),
+                self.header.destination_mac.clone(),
+            ),
+            (
+                "EtherType".to_owned(),
+                self.header.ether_type.protocol_name.clone(),
+            ),
+            ("malformed".to_owned(), self.header.malformed.to_string()),
+        ])
     }
 
     fn get_next(&self) -> &Option<Box<dyn Layer>> {
