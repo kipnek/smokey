@@ -20,7 +20,7 @@ pub trait Layer: Send + Sync + Debug {
     fn box_clone(&self) -> Box<dyn Layer>;
 
     fn info(&self) -> String {
-        "Unknown protocol, info not available".to_string()
+        "Unknown protocol, info not available".to_owned()
     }
 }
 

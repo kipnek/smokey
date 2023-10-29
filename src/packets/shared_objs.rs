@@ -47,11 +47,11 @@ pub enum ProtocolType {
 impl ToString for ProtocolType {
     fn to_string(&self) -> String {
         match self {
-            ProtocolType::Tcp => "TCP".to_string(),
-            ProtocolType::Udp => "UDP".to_string(),
-            ProtocolType::Ipv4 => "Ipv4".to_string(),
-            ProtocolType::Ethernet => "Ethernet".to_string(),
-            ProtocolType::Unknown => "Unknown".to_string(),
+            ProtocolType::Tcp => "TCP".to_owned(),
+            ProtocolType::Udp => "UDP".to_owned(),
+            ProtocolType::Ipv4 => "Ipv4".to_owned(),
+            ProtocolType::Ethernet => "Ethernet".to_owned(),
+            ProtocolType::Unknown => "Unknown".to_owned(),
         }
     }
 }

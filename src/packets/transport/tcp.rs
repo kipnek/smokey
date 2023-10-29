@@ -103,34 +103,34 @@ impl Layer for TcpPacket {
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
-        map.insert("protocol".to_string(), "tcp".to_string());
+        map.insert("protocol".to_owned(), "tcp".to_owned());
         map.insert(
-            "source_port".to_string(),
+            "source_port".to_owned(),
             self.header.source_port.to_string(),
         );
         map.insert(
-            "destination_port".to_string(),
+            "destination_port".to_owned(),
             self.header.destination_port.to_string(),
         );
         map.insert(
-            "acknowledgment_number".to_string(),
+            "acknowledgment_number".to_owned(),
             self.header.acknowledgment_number.to_string(),
         );
         map.insert(
-            "data_offset_reserved_flags".to_string(),
+            "data_offset_reserved_flags".to_owned(),
             self.header.data_offset_reserved_flags.to_string(),
         );
         map.insert(
-            "window_size".to_string(),
+            "window_size".to_owned(),
             self.header.window_size.to_string(),
         );
-        map.insert("checksum".to_string(), self.header.checksum.to_string());
+        map.insert("checksum".to_owned(), self.header.checksum.to_string());
         map.insert(
-            "urgent_pointer".to_string(),
+            "urgent_pointer".to_owned(),
             self.header.urgent_pointer.to_string(),
         );
         map.insert(
-            "flags".to_string(),
+            "flags".to_owned(),
             format!(
                 "ack : {}, psh : {}, rst : {}, syn : {}, fin : {}",
                 self.header.flags.ack as u8,
@@ -140,7 +140,7 @@ impl Layer for TcpPacket {
                 self.header.flags.fin as u8,
             ),
         );
-        map.insert("malformed".to_string(), self.header.malformed.to_string());
+        map.insert("malformed".to_owned(), self.header.malformed.to_string());
         map
     }
 

@@ -67,10 +67,10 @@ impl Ipv4Header {
             flags_fragment_offset: 0,
             time_to_live: 0,
             header_checksum: 0,
-            source_address: "".to_string(),
-            destination_address: "".to_string(),
+            source_address: "".to_owned(),
+            destination_address: "".to_owned(),
             next_header: ProtocolDescriptor {
-                protocol_name: "malformed".to_string(),
+                protocol_name: "malformed".to_owned(),
                 protocol_type: ExtendedType::Malformed,
             },
             flags: Ipv4Flags {
@@ -215,44 +215,44 @@ impl Layer for Ipv4Packet {
             .join("\n");
 
         LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_string(), "ipv4".to_string()),
-            ("version".to_string(), self.header.version_ihl.to_string()),
-            ("dscp".to_string(), self.header.dscp.to_string()),
-            ("ecn".to_string(), self.header.ecn.to_string()),
+            ("protocol".to_owned(), "ipv4".to_owned()),
+            ("version".to_owned(), self.header.version_ihl.to_string()),
+            ("dscp".to_owned(), self.header.dscp.to_string()),
+            ("ecn".to_owned(), self.header.ecn.to_string()),
             (
-                "total_length".to_string(),
+                "total_length".to_owned(),
                 self.header.total_length.to_string(),
             ),
             (
-                "identification".to_string(),
+                "identification".to_owned(),
                 self.header.identification.to_string(),
             ),
             (
-                "flags_fragment_offset".to_string(),
+                "flags_fragment_offset".to_owned(),
                 self.header.flags_fragment_offset.to_string(),
             ),
             (
-                "time_to_live".to_string(),
+                "time_to_live".to_owned(),
                 self.header.time_to_live.to_string(),
             ),
             (
-                "header_checksum".to_string(),
+                "header_checksum".to_owned(),
                 self.header.header_checksum.to_string(),
             ),
             (
-                "source_address".to_string(),
-                self.header.source_address.to_string(),
+                "source_address".to_owned(),
+                self.header.source_address.clone(),
             ),
             (
-                "destination_address".to_string(),
-                self.header.destination_address.to_string(),
+                "destination_address".to_owned(),
+                self.header.destination_address.clone(),
             ),
             (
-                "next_header".to_string(),
+                "next_header".to_owned(),
                 format!("protocol : {}", self.header.next_header.protocol_name,),
             ),
             (
-                "flags".to_string(),
+                "flags".to_owned(),
                 format!(
                     "reserved : {}, dont fragment : {},  more fragment : {}",
                     self.header.flags.reserved,
@@ -260,8 +260,8 @@ impl Layer for Ipv4Packet {
                     self.header.flags.morefrag
                 ),
             ),
-            ("malformed".to_string(), self.header.malformed.to_string()),
-            ("options".to_string(), options_string),
+            ("malformed".to_owned(), self.header.malformed.to_string()),
+            ("options".to_owned(), options_string),
         ])
     }
 
@@ -327,11 +327,11 @@ Helper functions
  */
 fn protocol_to_string(proto: IpNextHeaderProtocol) -> String {
     match proto {
-        IpNextHeaderProtocols::Ipv4 => "IPv4".to_string(),
-        IpNextHeaderProtocols::Tcp => "Tcp".to_string(),
-        IpNextHeaderProtocols::Udp => "Udp".to_string(),
-        IpNextHeaderProtocols::Ipv6 => "IPv6".to_string(),
-        _ => "Unknown".to_string(),
+        IpNextHeaderProtocols::Ipv4 => "IPv4".to_owned(),
+        IpNextHeaderProtocols::Tcp => "Tcp".to_owned(),
+        IpNextHeaderProtocols::Udp => "Udp".to_owned(),
+        IpNextHeaderProtocols::Ipv6 => "IPv6".to_owned(),
+        _ => "Unknown".to_owned(),
     }
 }
 

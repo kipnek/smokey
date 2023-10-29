@@ -35,7 +35,7 @@ impl Application for LiveCapture {
     }
 
     fn title(&self) -> String {
-        "cnote".to_string()
+        "cnote".to_owned()
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
@@ -171,11 +171,11 @@ fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
 
     for desc in descriptions {
         flattened.push(desc.id.to_string());
-        flattened.push(desc.timestamp.to_string());
+        flattened.push(desc.timestamp.clone());
         flattened.push(desc.protocol.to_string());
-        flattened.push(desc.source.to_string());
-        flattened.push(desc.destination.to_string());
-        flattened.push(desc.info.to_string());
+        flattened.push(desc.source.clone());
+        flattened.push(desc.destination.clone());
+        flattened.push(desc.info.clone());
     }
 
     flattened

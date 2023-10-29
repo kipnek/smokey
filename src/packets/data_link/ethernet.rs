@@ -34,7 +34,7 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
     ) -> ProtocolDescriptor<ExtendedType<EtherType>> {
         let protocol_name = match proto {
             ExtendedType::Known(ether_type) => set_name(ether_type),
-            ExtendedType::Malformed => "malformed".to_string(),
+            ExtendedType::Malformed => "malformed".to_owned(),
         };
 
         ProtocolDescriptor {
@@ -46,8 +46,8 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
 impl EthernetHeader {
     pub fn malformed(packet: &[u8]) -> EthernetHeader {
         EthernetHeader {
-            source_mac: "".to_string(),
-            destination_mac: "".to_string(),
+            source_mac: "".to_owned(),
+            destination_mac: "".to_owned(),
             ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Malformed),
             payload: packet.to_vec(),
             malformed: true,
@@ -116,17 +116,17 @@ impl Layer for EthernetFrame {
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
-        map.insert("protocol".to_string(), "ethernet".to_string());
-        map.insert("Source Mac".to_string(), self.header.source_mac.to_string());
+        map.insert("protocol".to_owned(), "ethernet".to_owned());
+        map.insert("Source Mac".to_owned(), self.header.source_mac.clone());
         map.insert(
-            "Destination Mac".to_string(),
-            self.header.destination_mac.to_string(),
+            "Destination Mac".to_owned(),
+            self.header.destination_mac.clone(),
         );
         map.insert(
-            "EtherType".to_string(),
-            self.header.ether_type.protocol_name.to_string(),
+            "EtherType".to_owned(),
+            self.header.ether_type.protocol_name.clone(),
         );
-        map.insert("malformed".to_string(), self.header.malformed.to_string());
+        map.insert("malformed".to_owned(), self.header.malformed.to_string());
         map
     }
 
@@ -171,7 +171,7 @@ impl Describable for EthernetFrame {
 
         Description {
             id: self.id,
-            timestamp: self.timestamp.to_string(),
+            timestamp: self.timestamp.clone(),
             protocol: layer.protocol_type(),
             source: s_addy,
             destination: dest_addy,
@@ -235,10 +235,10 @@ fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
 
 fn set_name(proto: EtherType) -> String {
     let name: String = match proto {
-        EtherTypes::Ipv4 => "IPv4".to_string(),
-        EtherTypes::Arp => "ARP".to_string(),
-        EtherTypes::Ipv6 => "IPv6".to_string(),
-        _ => "Unknown".to_string(),
+        EtherTypes::Ipv4 => "IPv4".to_owned(),
+        EtherTypes::Arp => "ARP".to_owned(),
+        EtherTypes::Ipv6 => "IPv6".to_owned(),
+        _ => "Unknown".to_owned(),
     };
     name
 }

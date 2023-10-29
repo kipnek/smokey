@@ -66,18 +66,18 @@ impl Layer for UdpPacket {
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         let mut map: LinkedHashMap<String, String> = LinkedHashMap::new();
-        map.insert("protocol".to_string(), "udp".to_string());
+        map.insert("protocol".to_owned(), "udp".to_owned());
         map.insert(
-            "source_port".to_string(),
+            "source_port".to_owned(),
             self.header.source_port.to_string(),
         );
         map.insert(
-            "destination_port".to_string(),
+            "destination_port".to_owned(),
             self.header.destination_port.to_string(),
         );
-        map.insert("length".to_string(), self.header.length.to_string());
-        map.insert("checksum".to_string(), self.header.checksum.to_string());
-        map.insert("malformed".to_string(), self.header.malformed.to_string());
+        map.insert("length".to_owned(), self.header.length.to_string());
+        map.insert("checksum".to_owned(), self.header.checksum.to_string());
+        map.insert("malformed".to_owned(), self.header.malformed.to_string());
 
         map
     }
