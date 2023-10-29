@@ -66,33 +66,33 @@ impl Application for LiveCapture {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let mut column = Column::new()
-            .spacing(10)
-            .push(button("start").on_press(Message::Start))
-            .push(button("stop").on_press(Message::Stop));
+        let mut column = Column::with_children(vec![
+            button("Start").on_press(Message::Start).into(),
+            button("Stop").on_press(Message::Stop).into(),
+            {
+                let prev_disabled = self.page == 0;
 
-        // Lock once here
-        column = column.push({
-            let prev_disabled = self.page == 0;
+                let button = Button::new("Previous");
+                if !prev_disabled {
+                    button.on_press(Message::PreviousPage)
+                } else {
+                    button
+                }
+                .into()
+            },
+            {
+                let next_disabled = self.page + 1 >= self.captured_packets.len();
 
-            let button = Button::new(Text::new("Previous"));
-            if !prev_disabled {
-                button.on_press(Message::PreviousPage)
-            } else {
-                button
-            }
-        });
-
-        column = column.push({
-            let next_disabled = self.page + 1 >= self.captured_packets.len();
-
-            let button = Button::new(Text::new("Next"));
-            if !next_disabled {
-                button.on_press(Message::NextPage)
-            } else {
-                button
-            }
-        });
+                let button = Button::new("Next");
+                if !next_disabled {
+                    button.on_press(Message::NextPage)
+                } else {
+                    button
+                }
+                .into()
+            },
+        ])
+        .spacing(10);
 
         if let Some(data) = self.captured_packets.get(self.page) {
             /*for item in data.iter() {
@@ -177,9 +177,7 @@ fn get_describable(
     vectors: &[Vec<Box<dyn Describable>>],
     id_to_find: i32,
 ) -> Option<&dyn Describable> {
-    vectors
-        .iter()
-        .flatten()
+    { vectors.iter().flatten() }
         .find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
 }
 
