@@ -81,8 +81,8 @@ impl Layer for UdpPacket {
         ])
     }
 
-    fn get_next(&self) -> &Option<Box<dyn Layer>> {
-        &self.payload
+    fn get_next(&self) -> Option<&dyn Layer> {
+        self.payload.as_deref()
     }
 
     fn protocol_type(&self) -> ProtocolType {

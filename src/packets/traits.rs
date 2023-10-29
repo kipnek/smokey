@@ -8,7 +8,7 @@ pub trait Layer: Send + Sync + Debug {
 
     fn get_summary(&self) -> LinkedHashMap<String, String>;
 
-    fn get_next(&self) -> &Option<Box<dyn Layer>>;
+    fn get_next(&self) -> Option<&dyn Layer>;
 
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Unknown // or a suitable default

@@ -130,8 +130,8 @@ impl Layer for EthernetFrame {
         ])
     }
 
-    fn get_next(&self) -> &Option<Box<dyn Layer>> {
-        &self.payload
+    fn get_next(&self) -> Option<&dyn Layer> {
+        self.payload.as_deref()
     }
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Ethernet
@@ -184,10 +184,7 @@ impl Describable for EthernetFrame {
         let mut current_layer: Option<&dyn Layer> = Some(self);
         while let Some(layer) = &current_layer {
             vec_map.push(layer.get_summary());
-            current_layer = layer
-                .get_next()
-                .as_ref()
-                .map(|boxed_layer| boxed_layer.as_ref());
+            current_layer = layer.get_next();
         }
 
         vec_map
@@ -215,14 +212,14 @@ helper functions
 //might be in another trait
 fn get_innermost_info(layer: &dyn Layer) -> (ProtocolType, String) {
     match layer.get_next() {
-        Some(next) => get_innermost_info(next.as_ref()),
+        Some(next) => get_innermost_info(next),
         None => (layer.protocol_type(), layer.info()),
     }
 }
 
 fn get_innermost_layer(layer: &dyn Layer) -> &dyn Layer {
     match layer.get_next() {
-        Some(next) => get_innermost_layer(next.as_ref()),
+        Some(next) => get_innermost_layer(next),
         None => layer,
     }
 }
