@@ -156,6 +156,14 @@ impl Layer for EthernetFrame {
 
 impl Describable for EthernetFrame {
     fn get_short(&self) -> Description {
+        let (s_addy, dest_addy) = match self.payload.as_ref() {
+            None => (
+                self.header.source_mac.to_owned(),
+                self.header.destination_mac.to_owned(),
+            ),
+            Some(network_layer) => (network_layer.source(), network_layer.destination()),
+        };
+
         let layer: &dyn Layer = match self.payload.as_ref() {
             Some(payload) => get_innermost_layer(payload.as_ref()),
             None => self as &dyn Layer,
@@ -165,8 +173,8 @@ impl Describable for EthernetFrame {
             id: self.id,
             timestamp: self.timestamp.to_string(),
             protocol: layer.protocol_type(),
-            source: layer.source(),
-            destination: layer.destination(),
+            source: s_addy,
+            destination: dest_addy,
             info: layer.info(),
         }
     }

@@ -104,7 +104,7 @@ impl Layer for UdpPacket {
 
     fn info(&self) -> String {
         format!(
-            "UDP Source Port {} -> Destination {}",
+            "UDP src {} -> dest {}",
             self.header.source_port, self.header.destination_port
         )
     }

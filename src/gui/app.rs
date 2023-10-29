@@ -3,9 +3,12 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
 
-use iced::widget::{button, scrollable, Button, Column, Text};
-use iced::{executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme};
+use iced::widget::{button, row, scrollable, Button, Column, Scrollable, Text};
+use iced::{
+    executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
+};
 
+use iced::widget::scrollable::Direction;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -96,22 +99,15 @@ impl Application for LiveCapture {
                 column = column.push(Text::new(item.get_short().info));
             }*/
             let scroll = scrollable(data.iter().fold(
-                Column::new().padding(13).spacing(5),
+                Column::new().padding(5).spacing(5).width(Length::Fill),
                 |scroll_adapters, frame| {
                     let short = frame.get_description();
-                    let description = format!(
-                        "{} {} {} {} {}",
-                        short.id, short.timestamp, short.source, short.destination, short.info
-                    );
-                    scroll_adapters.push(
-                        Button::new(Text::new(description))
-                            .padding([5, 5])
-                            .width(Length::Fill)
-                            .on_press(Message::FrameSelected(frame.get_id())),
-                    )
+                    let view = short.view();
+                    scroll_adapters.push(view)
                 },
             ))
-            .height(Length::Fill);
+            .height(Length::Fill)
+            .width(Length::Fill);
             column = column.push(scroll);
         }
 
@@ -131,13 +127,6 @@ impl Application for LiveCapture {
                 column = column.push(scroll);
             }
         }
-        /*
-        if self.page > 0 {
-            column = column.push(Button::new(Text::new("Previous")).on_press(Message::PreviousPage));
-        }
-        if self.page + 1 < lock.len() {
-            column = column.push(Button::new(Text::new("Next")).on_press(Message::NextPage));
-        }*/
 
         column.into()
     }
@@ -155,6 +144,22 @@ impl Application for LiveCapture {
     }
 }
 
+impl Description {
+    pub fn view(&self) -> Element<Message> {
+        row![
+            Text::new(self.id.to_string()).width(Length::FillPortion(90)),
+            Text::new(&self.timestamp).width(Length::FillPortion(250)),
+            Text::new(&self.source).width(Length::FillPortion(230)),
+            Text::new(&self.destination).width(Length::FillPortion(230)),
+            Text::new(&self.info).width(Length::FillPortion(250)),
+            button(Text::new("Details")).on_press(Message::FrameSelected(self.id))
+        ]
+        .align_items(Alignment::Start)
+        .width(Length::Fill)
+        .height(50.00)
+        .into()
+    }
+}
 /*
 
 helper functions
