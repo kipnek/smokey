@@ -37,8 +37,10 @@ impl LiveCapture {
             while let Ok(packet) = cap.next_packet() {
                 if stop.load(Ordering::Relaxed) {
                     //maybe save file here?
+                    println!("stopped capturing");
                     break;
                 }
+
                 match sender.send(Box::new(EthernetFrame::new(index, packet.data))) {
                     Ok(_) => {
                         index += 1;
@@ -48,10 +50,11 @@ impl LiveCapture {
                     }
                 }
 
-                    //makes sure it is an ethernet capture as opposed to wifi
+                //makes sure it is an ethernet capture as opposed to wifi
             }
+
             stop.store(false, Ordering::Release);
-            //drop(vec_deque);
+            drop(sender);
         });
     }
 
