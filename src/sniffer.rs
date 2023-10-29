@@ -1,24 +1,22 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::traits::Describable;
-use crossbeam::channel::{Receiver, Sender};
+use crossbeam::channel::Receiver;
 use pcap::{Device, Linktype};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::{panic, thread};
+use std::thread;
 
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page: usize,
     pub selected: Option<i32>,
-    pub channel: (Sender<Box<dyn Describable>>, Receiver<Box<dyn Describable>>),
+    pub receiver: Option<Receiver<Box<dyn Describable>>>,
     pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
-    pub stop: Arc<AtomicBool>,
 }
 
 impl LiveCapture {
     pub fn capture(&mut self) {
-        let stop = self.stop.clone();
-        let sender = self.channel.0.clone();
+        let (sender, receiver) = crossbeam::channel::unbounded();
+        self.receiver = Some(receiver);
+
         thread::spawn(move || {
             let mut index = 0;
 
@@ -35,31 +33,20 @@ impl LiveCapture {
             let Linktype(_cap_type) = cap.get_datalink();
 
             while let Ok(packet) = cap.next_packet() {
-                if stop.load(Ordering::Relaxed) {
-                    //maybe save file here?
-                    println!("stopped capturing");
+                let result = sender.send(Box::new(EthernetFrame::new(index, packet.data)));
+                if result.is_err() {
+                    // receiver was dropped
                     break;
                 }
-
-                match sender.send(Box::new(EthernetFrame::new(index, packet.data))) {
-                    Ok(()) => {
-                        index += 1;
-                    }
-                    Err(e) => {
-                        println!("log error for sending in sniffer: {e:?}")
-                    }
-                }
+                index += 1;
 
                 //makes sure it is an ethernet capture as opposed to wifi
             }
-
-            stop.store(false, Ordering::Release);
-            drop(sender);
         });
     }
 
     pub fn stop(&mut self) {
-        self.stop.store(true, Ordering::Relaxed);
+        self.receiver = None;
     }
 }
 
@@ -69,9 +56,8 @@ impl Default for LiveCapture {
             interfaces: vec![],
             page: 0,
             selected: None,
-            channel: crossbeam::channel::unbounded::<Box<dyn Describable>>(),
-            captured_packets: vec![vec![]],
-            stop: Arc::new(Default::default()),
+            receiver: None,
+            captured_packets: vec![Vec::with_capacity(1000)],
         }
     }
 }
