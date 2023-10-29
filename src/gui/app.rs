@@ -3,7 +3,7 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
 
-use iced::widget::{button, row, scrollable, Button, Column, Scrollable, Text};
+use iced::widget::{self, button, row, scrollable, Button, Column, Scrollable, Text};
 use iced::{
     executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
 };
@@ -98,34 +98,26 @@ impl Application for LiveCapture {
             /*for item in data.iter() {
                 column = column.push(Text::new(item.get_short().info));
             }*/
-            let scroll = scrollable(data.iter().fold(
-                Column::new().padding(5).spacing(5).width(Length::Fill),
-                |scroll_adapters, frame| {
-                    let short = frame.get_description();
-                    let view = short.view();
-                    scroll_adapters.push(view)
-                },
-            ))
-            .height(Length::Fill)
-            .width(Length::Fill);
+            let scroll_children = { data.iter() }
+                .map(|frame| frame.get_description().view())
+                .collect();
+
+            let scroll = scrollable(widget::column(scroll_children).padding(13).spacing(5))
+                .height(Length::Fill)
+                .width(Length::Fill);
+
             column = column.push(scroll);
         }
 
-        if let Some(selected_id) = self.selected {
-            if let Some(frame) = get_describable(&self.captured_packets, selected_id) {
-                let scroll = scrollable(frame.get_long().iter().fold(
-                    Column::new().padding(13).spacing(5),
-                    |column, map| {
-                        map.iter().fold(column, |inner_column, (key, value)| {
-                            // You can format the key and value however you want.
-                            let description = format!("{}: {}", key, value);
-                            inner_column.push(Text::new(description))
-                        })
-                    },
-                ))
+        if let Some(frame) = { self.selected }
+            .and_then(|selected_id| get_describable(&self.captured_packets, selected_id))
+        {
+            let children = { frame.get_long().iter().flatten() }
+                .map(|(key, value)| Text::new(format!("{}: {}", key, value)).into())
+                .collect();
+            let scroll = scrollable(Column::with_children(children).padding(13).spacing(5))
                 .height(Length::Fill);
-                column = column.push(scroll);
-            }
+            column = column.push(scroll);
         }
 
         column.into()
@@ -167,18 +159,18 @@ helper functions
  */
 
 fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
-    let mut flattened = Vec::new();
-
-    for desc in descriptions {
-        flattened.push(desc.id.to_string());
-        flattened.push(desc.timestamp.clone());
-        flattened.push(desc.protocol.to_string());
-        flattened.push(desc.source.clone());
-        flattened.push(desc.destination.clone());
-        flattened.push(desc.info.clone());
-    }
-
-    flattened
+    { descriptions.into_iter() }
+        .flat_map(|desc| {
+            [
+                desc.id.to_string(),
+                desc.timestamp.clone(),
+                desc.protocol.to_string(),
+                desc.source.clone(),
+                desc.destination.clone(),
+                desc.info.clone(),
+            ]
+        })
+        .collect()
 }
 
 fn get_describable(

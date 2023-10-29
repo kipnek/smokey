@@ -91,43 +91,29 @@ impl Ipv4Header {
     }
 
     pub fn set_options(options: Ipv4OptionIterable) -> Vec<Ipv4Options> {
-        let mut results = vec![];
-        for option in options {
-            match option.get_number().0 {
-                0x00 => {
+        options
+            .map(|option| {
+                match option.get_number().0 {
                     // End of Options List
-                    results.push(Ipv4Options::Eol);
-                }
-                0x01 => {
+                    0x00 => Ipv4Options::Eol,
                     // No Operation
-                    results.push(Ipv4Options::Nop);
-                }
-                0x83 => {
+                    0x01 => Ipv4Options::Nop,
                     // Loose Source and Record Route
-                    results.push(Ipv4Options::Lsrr);
-                }
-                0x89 => {
+                    0x83 => Ipv4Options::Lsrr,
                     // Strict Source and Record Route
-                    results.push(Ipv4Options::Ssrr);
-                }
-                0x07 => {
+                    0x89 => Ipv4Options::Ssrr,
                     // Record Route
-                    results.push(Ipv4Options::Rr);
-                }
-                0x44 => {
+                    0x07 => Ipv4Options::Rr,
                     // Timestamp
-                    results.push(Ipv4Options::Timestamp);
-                }
-                // ... add other options as needed
-                _ => {
-                    results.push(Ipv4Options::Unknown(format!(
+                    0x44 => Ipv4Options::Timestamp,
+                    // ... add other options as needed
+                    _ => Ipv4Options::Unknown(format!(
                         "Unknown Option: {:#X}",
                         option.get_number().0
-                    )));
+                    )),
                 }
-            }
-        }
-        results
+            })
+            .collect()
     }
 }
 
