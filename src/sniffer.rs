@@ -42,11 +42,11 @@ impl LiveCapture {
                 }
 
                 match sender.send(Box::new(EthernetFrame::new(index, packet.data))) {
-                    Ok(_) => {
+                    Ok(()) => {
                         index += 1;
                     }
-                    Err(_) => {
-                        println!("log error for sending in sniffer")
+                    Err(e) => {
+                        println!("log error for sending in sniffer: {e:?}")
                     }
                 }
 
