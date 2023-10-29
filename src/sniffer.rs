@@ -23,41 +23,35 @@ impl LiveCapture {
             let mut index = 0;
 
             //only for development
-            let device = Device::lookup()
-                .and_then(|dev_result| {
-                    dev_result.ok_or_else(|| panic!("no device"))
-                })
-                .unwrap_or_else(|err| panic!("Device lookup failed: {}", err));
+            let device = Device::lookup().unwrap().expect("Device Lookup failed");
 
-            if let Ok(mut cap) = pcap::Capture::from_device(device)
-                .and_then(|cap| cap.immediate_mode(true).promisc(true).open())
-            {
-                let Linktype(_cap_type) = cap.get_datalink();
+            let mut cap = pcap::Capture::from_device(device)
+                .unwrap()
+                .immediate_mode(true)
+                .promisc(true)
+                .open()
+                .unwrap();
+            //use when more types are captured
+            let Linktype(_cap_type) = cap.get_datalink();
 
-                while let Ok(packet) = cap.next_packet() {
-                    if stop.load(Ordering::Relaxed) {
-                        //maybe save file here?
-                        break;
-                    }
-                    match sender.send(Box::new(EthernetFrame::new(index, packet.data))) {
-                        Ok(_) => {
-                            index += 1;
-                        }
-                        Err(_) => {
-                            println!("log error for sending in sniffer")
-                        }
-                    }
-                    /*
-                        //makes sure it is an ethernet capture as opposed to wifi
-                        if cap_type == 1 {
-                            buffer_lock[vec_indexer].push(Box::new(EthernetFrame::new(index, packet.data)));
-                            index += 1;
-                        }
-                    }*/
+            while let Ok(packet) = cap.next_packet() {
+                if stop.load(Ordering::Relaxed) {
+                    //maybe save file here?
+                    break;
                 }
-                stop.store(false, Ordering::Release);
-                //drop(vec_deque);
+                match sender.send(Box::new(EthernetFrame::new(index, packet.data))) {
+                    Ok(_) => {
+                        index += 1;
+                    }
+                    Err(_) => {
+                        println!("log error for sending in sniffer")
+                    }
+                }
+
+                    //makes sure it is an ethernet capture as opposed to wifi
             }
+            stop.store(false, Ordering::Release);
+            //drop(vec_deque);
         });
     }
 
