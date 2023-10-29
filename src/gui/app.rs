@@ -3,11 +3,12 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
 
-use iced::widget::{button, row, scrollable, Button, Column, Text, Scrollable};
+use iced::widget::{button, row, scrollable, Button, Column, Scrollable, Text};
 use iced::{
     executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
 };
 
+use iced::widget::scrollable::Direction;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -105,7 +106,8 @@ impl Application for LiveCapture {
                     scroll_adapters.push(view)
                 },
             ))
-            .height(Length::Fill);
+            .height(Length::Fill)
+            .width(Length::Fill);
             column = column.push(scroll);
         }
 
