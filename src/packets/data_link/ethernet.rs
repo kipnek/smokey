@@ -101,16 +101,12 @@ impl Layer for EthernetFrame {
                 malformed: false,
             },
         };
-        let payload: Option<Box<dyn Layer>> = match &packet_header.ether_type.protocol_type.clone()
-        {
-            &ExtendedType::Known(EtherTypes::Ipv4) => {
-                //ipv4
-                Some(Box::new(parse_ipv4(&packet_header.payload)))
-            }
-            _ => None,
-        };
+        self.payload = matches!(
+            packet_header.ether_type.protocol_type,
+            ExtendedType::Known(EtherTypes::Ipv4)
+        )
+        .then(|| Box::new(parse_ipv4(&packet_header.payload)) as _);
         self.header = packet_header;
-        self.payload = payload;
         self.description = self.get_short();
     }
 
