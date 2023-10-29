@@ -25,7 +25,7 @@ impl LiveCapture {
             //only for development
             let device = Device::lookup()
                 .and_then(|dev_result| {
-                    dev_result.ok_or_else(|| pcap::Error::PcapError("no device".to_string()))
+                    dev_result.ok_or_else(|| panic!("no device"))
                 })
                 .unwrap_or_else(|err| panic!("Device lookup failed: {}", err));
 
