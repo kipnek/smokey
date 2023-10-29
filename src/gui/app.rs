@@ -41,7 +41,9 @@ impl Application for LiveCapture {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::Tick => {
-                fetch_data_from_channel(self.channel.1.clone(), &mut self.captured_packets);
+                if let Some(receiver) = self.receiver.as_mut() {
+                    fetch_data_from_channel(receiver, &mut self.captured_packets);
+                }
             }
             Message::Start => self.capture(),
             Message::Stop => self.stop(),
