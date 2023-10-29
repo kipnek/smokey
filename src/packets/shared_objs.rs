@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, Clone, Default)]
 pub struct ProtocolDescriptor<T> {
     pub protocol_name: String,
@@ -44,15 +46,15 @@ pub enum ProtocolType {
     // ... other protocols
 }
 
-impl ToString for ProtocolType {
-    fn to_string(&self) -> String {
-        match self {
-            ProtocolType::Tcp => "TCP".to_owned(),
-            ProtocolType::Udp => "UDP".to_owned(),
-            ProtocolType::Ipv4 => "Ipv4".to_owned(),
-            ProtocolType::Ethernet => "Ethernet".to_owned(),
-            ProtocolType::Unknown => "Unknown".to_owned(),
-        }
+impl fmt::Display for ProtocolType {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        fmt.write_str(match self {
+            ProtocolType::Tcp => "TCP",
+            ProtocolType::Udp => "UDP",
+            ProtocolType::Ipv4 => "Ipv4",
+            ProtocolType::Ethernet => "Ethernet",
+            ProtocolType::Unknown => "Unknown",
+        })
     }
 }
 
