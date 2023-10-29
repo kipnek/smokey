@@ -147,11 +147,11 @@ impl Application for LiveCapture {
 impl Description {
     pub fn view(&self) -> Element<Message> {
         row![
-            Text::new(self.id.to_string()).width(Length::FillPortion(80)),
-            Text::new(&self.timestamp).width(Length::FillPortion(230)),
+            Text::new(self.id.to_string()).width(Length::FillPortion(90)),
+            Text::new(&self.timestamp).width(Length::FillPortion(250)),
             Text::new(&self.source).width(Length::FillPortion(230)),
             Text::new(&self.destination).width(Length::FillPortion(230)),
-            Text::new(&self.info).width(Length::FillPortion(230)),
+            Text::new(&self.info).width(Length::FillPortion(250)),
             button(Text::new("Details")).on_press(Message::FrameSelected(self.id))
         ]
         .align_items(Alignment::Start)
