@@ -18,7 +18,7 @@ fn main() -> iced::Result {
 
 fn custom_panic_handler(info: &panic::PanicInfo) {
     // Handle the panic, e.g., log it or perform some cleanup.
-    println!("Panic occurred: {:?}", info);
+    println!("Panic occurred: {info:?}");
 }
 
 /*

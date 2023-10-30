@@ -46,8 +46,8 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
 impl EthernetHeader {
     pub fn malformed(packet: &[u8]) -> EthernetHeader {
         EthernetHeader {
-            source_mac: "".to_owned(),
-            destination_mac: "".to_owned(),
+            source_mac: String::new(),
+            destination_mac: String::new(),
             ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Malformed),
             payload: packet.to_vec(),
             malformed: true,
@@ -154,8 +154,8 @@ impl Describable for EthernetFrame {
     fn get_short(&self) -> Description {
         let (s_addy, dest_addy) = match self.payload.as_deref() {
             None => (
-                self.header.source_mac.to_owned(),
-                self.header.destination_mac.to_owned(),
+                self.header.source_mac.clone(),
+                self.header.destination_mac.clone(),
             ),
             Some(network_layer) => (network_layer.source(), network_layer.destination()),
         };

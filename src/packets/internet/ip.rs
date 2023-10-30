@@ -67,8 +67,8 @@ impl Ipv4Header {
             flags_fragment_offset: 0,
             time_to_live: 0,
             header_checksum: 0,
-            source_address: "".to_owned(),
-            destination_address: "".to_owned(),
+            source_address: String::new(),
+            destination_address: String::new(),
             next_header: ProtocolDescriptor {
                 protocol_name: "malformed".to_owned(),
                 protocol_type: ExtendedType::Malformed,
@@ -182,8 +182,7 @@ impl Layer for Ipv4Packet {
 
         let payload: Option<Box<dyn Layer>> = matches!(
             &packet_header.next_header.protocol_type,
-            ExtendedType::Known(IpNextHeaderProtocols::Tcp)
-                | ExtendedType::Known(IpNextHeaderProtocols::Udp)
+            ExtendedType::Known(IpNextHeaderProtocols::Tcp | IpNextHeaderProtocols::Udp)
         )
         .then(|| Box::new(parse_udp(&packet_header.payload)) as _);
 
@@ -192,11 +191,8 @@ impl Layer for Ipv4Packet {
     }
 
     fn get_summary(&self) -> LinkedHashMap<String, String> {
-        let options_string = self
-            .header
-            .options
-            .iter()
-            .map(|option| option.description())
+        let options_string = { self.header.options.iter() }
+            .map(Ipv4Options::description)
             .collect::<Vec<&str>>()
             .join("\n");
 
