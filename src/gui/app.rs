@@ -3,12 +3,11 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
 
-use iced::widget::{self, button, row, scrollable, Button, Column, Scrollable, Text};
+use iced::widget::{self, button, row, scrollable, Text};
 use iced::{
     executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
 };
 
-use iced::widget::scrollable::Direction;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -68,58 +67,43 @@ impl Application for LiveCapture {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let mut column = Column::with_children(vec![
-            button("Start").on_press(Message::Start).into(),
-            button("Stop").on_press(Message::Stop).into(),
-            {
-                let prev_disabled = self.page == 0;
+        let page_button = |text, enable_press, message| {
+            let button = button(text);
+            if enable_press {
+                button.on_press(message)
+            } else {
+                button
+            }
+        };
 
-                let button = Button::new("Previous");
-                if !prev_disabled {
-                    button.on_press(Message::PreviousPage)
-                } else {
-                    button
-                }
-                .into()
-            },
-            {
-                let next_disabled = self.page + 1 >= self.captured_packets.len();
-
-                let button = Button::new("Next");
-                if !next_disabled {
-                    button.on_press(Message::NextPage)
-                } else {
-                    button
-                }
-                .into()
-            },
-        ])
+        let mut column = widget::column!(
+            button("Start").on_press(Message::Start),
+            button("Stop").on_press(Message::Stop),
+            page_button("Previous", self.page != 0, Message::PreviousPage),
+            page_button(
+                "Next",
+                self.page + 1 < self.captured_packets.len(),
+                Message::NextPage
+            ),
+        )
         .spacing(10);
 
         if let Some(data) = self.captured_packets.get(self.page) {
-            /*for item in data.iter() {
-                column = column.push(Text::new(item.get_short().info));
-            }*/
-            let scroll_children = { data.iter() }
+            let column_children = { data.iter() }
                 .map(|frame| frame.get_description().view())
                 .collect();
-
-            let scroll = scrollable(widget::column(scroll_children).padding(13).spacing(5))
-                .height(Length::Fill)
-                .width(Length::Fill);
-
-            column = column.push(scroll);
+            let content = widget::column(column_children).padding(13).spacing(5);
+            column = column.push(scrollable(content).height(Length::Fill).width(Length::Fill));
         }
 
         if let Some(frame) = { self.selected }
             .and_then(|selected_id| get_describable(&self.captured_packets, selected_id))
         {
-            let children = { frame.get_long().iter().flatten() }
+            let column_children = { frame.get_long().iter().flatten() }
                 .map(|(key, value)| Text::new(format!("{}: {}", key, value)).into())
                 .collect();
-            let scroll = scrollable(Column::with_children(children).padding(13).spacing(5))
-                .height(Length::Fill);
-            column = column.push(scroll);
+            let content = widget::column(column_children).padding(13).spacing(5);
+            column = column.push(scrollable(content).height(Length::Fill));
         }
 
         column.into()
