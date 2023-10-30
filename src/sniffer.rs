@@ -4,12 +4,13 @@ use crossbeam::channel::Receiver;
 use pcap::{Device, Linktype};
 use std::thread;
 
+#[derive(Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page: usize,
     pub selected: Option<i32>,
     pub receiver: Option<Receiver<Box<dyn Describable>>>,
-    pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
+    pub captured_packets: Vec<Box<dyn Describable>>,
 }
 
 impl LiveCapture {
@@ -47,18 +48,6 @@ impl LiveCapture {
 
     pub fn stop(&mut self) {
         self.receiver = None;
-    }
-}
-
-impl Default for LiveCapture {
-    fn default() -> Self {
-        LiveCapture {
-            interfaces: vec![],
-            page: 0,
-            selected: None,
-            receiver: None,
-            captured_packets: vec![Vec::with_capacity(1000)],
-        }
     }
 }
 

@@ -48,7 +48,7 @@ impl Application for LiveCapture {
             Message::Stop => self.stop(),
             Message::NextPage => {
                 //if let Ok(lock) = self.captured_packets.lock(){
-                if self.page < self.captured_packets.len() - 1 {
+                if (self.page + 1) * 1000 < self.captured_packets.len() {
                     self.page += 1;
                 }
                 //}
@@ -82,13 +82,13 @@ impl Application for LiveCapture {
             page_button("Previous", self.page != 0, Message::PreviousPage),
             page_button(
                 "Next",
-                self.page + 1 < self.captured_packets.len(),
+                (self.page + 1) * 1000 < self.captured_packets.len(),
                 Message::NextPage
             ),
         )
         .spacing(10);
 
-        if let Some(data) = self.captured_packets.get(self.page) {
+        if let Some(data) = self.captured_packets.chunks(1000).nth(self.page) {
             let column_children = { data.iter() }
                 .map(|frame| frame.get_description().view())
                 .collect();
@@ -159,12 +159,8 @@ fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
         .collect()
 }
 
-fn get_describable(
-    vectors: &[Vec<Box<dyn Describable>>],
-    id_to_find: i32,
-) -> Option<&dyn Describable> {
-    { vectors.iter().flatten() }
-        .find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
+fn get_describable(vectors: &[Box<dyn Describable>], id_to_find: i32) -> Option<&dyn Describable> {
+    { vectors.iter() }.find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
 }
 
 fn append_describables(
@@ -188,15 +184,9 @@ fn append_describables(
 
 fn fetch_data_from_channel(
     receiver: &mut Receiver<Box<dyn Describable>>,
-    packets: &mut Vec<Vec<Box<dyn Describable>>>,
+    packets: &mut Vec<Box<dyn Describable>>,
 ) {
-    if packets.is_empty() || packets.last().unwrap().len() == 1000 {
-        packets.push(Vec::with_capacity(1000));
-    }
-
-    let last_vector = packets.last_mut().unwrap();
-    let limit = 100.min(1000 - last_vector.len());
-    last_vector.extend(receiver.try_iter().take(limit));
+    packets.extend(receiver.try_iter());
 }
 
 /*
