@@ -39,28 +39,19 @@ pub struct TcpFlags {
 impl TcpHeader {
     fn set_tcp_flags(flags_byte: u8) -> TcpFlags {
         TcpFlags {
-            urg: (flags_byte & 0b100000) != 0,
-            ack: (flags_byte & 0b010000) != 0,
-            psh: (flags_byte & 0b001000) != 0,
-            rst: (flags_byte & 0b000100) != 0,
-            syn: (flags_byte & 0b000010) != 0,
-            fin: (flags_byte & 0b000001) != 0,
+            urg: (flags_byte & 0b10_0000) != 0,
+            ack: (flags_byte & 0b01_0000) != 0,
+            psh: (flags_byte & 0b00_1000) != 0,
+            rst: (flags_byte & 0b00_0100) != 0,
+            syn: (flags_byte & 0b00_0010) != 0,
+            fin: (flags_byte & 0b00_0001) != 0,
         }
     }
 
     fn malformed(payload: &[u8]) -> TcpHeader {
         TcpHeader {
-            source_port: 0,
-            destination_port: 0,
-            sequence_number: 0,
-            acknowledgment_number: 0,
-            data_offset_reserved_flags: 0,
-            window_size: 0,
-            checksum: 0,
-            urgent_pointer: 0,
-            flags: Default::default(),
             payload: payload.to_vec(),
-            malformed: false,
+            ..Default::default()
         }
     }
 }
@@ -133,11 +124,11 @@ impl Layer for TcpPacket {
                 "flags".to_owned(),
                 format!(
                     "ack : {}, psh : {}, rst : {}, syn : {}, fin : {}",
-                    self.header.flags.ack as u8,
-                    self.header.flags.psh as u8,
-                    self.header.flags.rst as u8,
-                    self.header.flags.syn as u8,
-                    self.header.flags.fin as u8,
+                    u8::from(self.header.flags.ack),
+                    u8::from(self.header.flags.psh),
+                    u8::from(self.header.flags.rst),
+                    u8::from(self.header.flags.syn),
+                    u8::from(self.header.flags.fin),
                 ),
             ),
             ("malformed".to_owned(), self.header.malformed.to_string()),

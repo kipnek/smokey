@@ -30,7 +30,7 @@ impl Application for LiveCapture {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let app = LiveCapture::default();
-        (app, iced::Command::perform(async {}, |_| Message::Tick))
+        (app, iced::Command::perform(async {}, |()| Message::Tick))
     }
 
     fn title(&self) -> String {
@@ -100,7 +100,7 @@ impl Application for LiveCapture {
             .and_then(|selected_id| get_describable(&self.captured_packets, selected_id))
         {
             let column_children = { frame.get_long().iter().flatten() }
-                .map(|(key, value)| Text::new(format!("{}: {}", key, value)).into())
+                .map(|(key, value)| Text::new(format!("{key}: {value}")).into())
                 .collect();
             let content = widget::column(column_children).padding(13).spacing(5);
             column = column.push(scrollable(content).height(Length::Fill));
