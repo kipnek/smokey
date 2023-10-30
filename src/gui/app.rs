@@ -2,14 +2,19 @@ use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use crossbeam::channel::Receiver;
+use std::fmt;
+use std::fmt::Debug;
 
-use iced::widget::{self, button, row, scrollable, Button, Column, Scrollable, Text};
+use iced::widget::scrollable::Direction;
+use iced::widget::{
+    self, button, container, row, scrollable, text, Button, Column, Scrollable, Text,
+};
 use iced::{
     executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
 };
-
-use iced::widget::scrollable::Direction;
+use iced_table::{table, Table};
 use std::time::Duration;
+
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -21,6 +26,7 @@ pub enum Message {
     FrameSelected(i32),
     //DataReceived(Vec<Box<dyn Describable>>)
     NoOp,
+    SyncHeader(scrollable::AbsoluteOffset),
 }
 
 impl Application for LiveCapture {
@@ -48,11 +54,9 @@ impl Application for LiveCapture {
             Message::Start => self.capture(),
             Message::Stop => self.stop(),
             Message::NextPage => {
-                //if let Ok(lock) = self.captured_packets.lock(){
                 if self.page < self.captured_packets.len() - 1 {
                     self.page += 1;
                 }
-                //}
             }
             Message::PreviousPage => {
                 if self.page > 0 {
@@ -63,11 +67,27 @@ impl Application for LiveCapture {
                 self.selected = Some(frame_id);
             }
             Message::NoOp => {}
+            Message::SyncHeader(offset) => {
+                return Command::batch(vec![
+                    scrollable::scroll_to(self.header.clone(), offset),
+                    scrollable::scroll_to(self.footer.clone(), offset),
+                ])
+            }
         };
         Command::none()
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
+
+        let desc_columns: Vec<DescriptionColumn> = vec![
+            DescriptionColumn::new(DescriptionTable::Id),
+            DescriptionColumn::new(DescriptionTable::Timestamp),
+            DescriptionColumn::new(DescriptionTable::Source),
+            DescriptionColumn::new(DescriptionTable::Destination),
+            DescriptionColumn::new(DescriptionTable::Info),
+            DescriptionColumn::new(DescriptionTable::Details),
+        ];
+
         let mut column = Column::with_children(vec![
             button("Start").on_press(Message::Start).into(),
             button("Stop").on_press(Message::Stop).into(),
@@ -100,15 +120,23 @@ impl Application for LiveCapture {
             /*for item in data.iter() {
                 column = column.push(Text::new(item.get_short().info));
             }*/
+            let mut table:Table<'_, DescriptionColumn, Box<dyn Describable>, Message, Renderer> = table(
+                self.header.clone(),
+                self.body.clone(),
+                &desc_columns,
+                data.as_slice(),
+                Message::SyncHeader,
+            );
+            /*
             let scroll_children = { data.iter() }
                 .map(|frame| frame.get_description().view())
                 .collect();
 
             let scroll = scrollable(widget::column(scroll_children).padding(13).spacing(5))
                 .height(Length::Fill)
-                .width(Length::Fill);
+                .width(Length::Fill);*/
 
-            column = column.push(scroll);
+            column = column.push(table);
         }
 
         if let Some(frame) = { self.selected }
@@ -213,6 +241,87 @@ fn fetch_data_from_channel(
     let last_vector = packets.last_mut().unwrap();
     let limit = 100.min(1000 - last_vector.len());
     last_vector.extend(receiver.try_iter().take(limit));
+}
+
+struct DescriptionColumn {
+    field: DescriptionTable,
+    width: f32,
+    resize_offset: Option<f32>,
+}
+
+impl DescriptionColumn {
+    fn new(dt: DescriptionTable) -> Self {
+        Self {
+            field: dt,
+            width: 100.0,
+            resize_offset: None,
+        }
+    }
+}
+
+pub enum DescriptionTable {
+    Id,
+    Timestamp,
+    Source,
+    Destination,
+    Info,
+    Details,
+}
+
+impl fmt::Display for DescriptionTable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                DescriptionTable::Id => "Id",
+                DescriptionTable::Timestamp => "Timestamp",
+                DescriptionTable::Source => "Source",
+                DescriptionTable::Destination => "Destination",
+                DescriptionTable::Info => "Info",
+                DescriptionTable::Details => "Details",
+            }
+        )
+    }
+}
+
+impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
+    type Row = Box<dyn Describable>;
+
+    fn header(&'b self, col_index: usize) -> Element<'a, Message, Renderer> {
+        container(text(format!("{}", self.field)))
+            .height(24)
+            .center_y()
+            .into()
+    }
+
+    fn cell(
+        &'b self,
+        col_index: usize,
+        row_index: usize,
+        row: &'b Self::Row,
+    ) -> Element<'a, Message, Renderer> {
+        let row = row.get_description();
+        let cell_content: Element<Message> = match self.field {
+            DescriptionTable::Id => text(row.id.to_string()).into(),
+            DescriptionTable::Timestamp => text(row.timestamp.to_owned()).into(),
+            DescriptionTable::Source => text(row.source.to_owned()).into(),
+            DescriptionTable::Destination => text(row.destination.to_owned()).into(),
+            DescriptionTable::Info => text(row.info.to_owned()).into(),
+            DescriptionTable::Details => button(Text::new("Details"))
+                .on_press(Message::FrameSelected(row.id))
+                .into(),
+        };
+        container(cell_content).height(24).center_y().into()
+    }
+
+    fn width(&self) -> f32 {
+        self.width
+    }
+
+    fn resize_offset(&self) -> Option<f32> {
+        self.resize_offset
+    }
 }
 
 /*

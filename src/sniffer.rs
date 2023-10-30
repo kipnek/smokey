@@ -3,6 +3,7 @@ use crate::packets::traits::Describable;
 use crossbeam::channel::Receiver;
 use pcap::{Device, Linktype};
 use std::thread;
+use iced::widget::scrollable;
 
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
@@ -10,6 +11,9 @@ pub struct LiveCapture {
     pub selected: Option<i32>,
     pub receiver: Option<Receiver<Box<dyn Describable>>>,
     pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
+    pub header: scrollable::Id,
+    pub footer: scrollable::Id,
+    pub body: scrollable::Id,
 }
 
 impl LiveCapture {
@@ -58,6 +62,9 @@ impl Default for LiveCapture {
             selected: None,
             receiver: None,
             captured_packets: vec![Vec::with_capacity(1000)],
+            header: scrollable::Id::unique(),
+            footer: scrollable::Id::unique(),
+            body: scrollable::Id::unique(),
         }
     }
 }
