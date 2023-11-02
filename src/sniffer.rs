@@ -9,8 +9,8 @@ pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page: usize,
     pub selected: Option<i32>,
-    pub receiver: Option<Receiver<Box<dyn Describable>>>,
-    pub captured_packets: Vec<Box<dyn Describable>>,
+    pub receiver: Option<Receiver<EthernetFrame>>,
+    pub captured_packets: Vec<EthernetFrame>,
 }
 
 impl LiveCapture {
@@ -37,7 +37,7 @@ impl LiveCapture {
                 let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
                     continue;
                 };
-                let result = sender.send(Box::new(eth_frame));
+                let result = sender.send(eth_frame);
                 if result.is_err() {
                     // receiver was dropped
                     break;
