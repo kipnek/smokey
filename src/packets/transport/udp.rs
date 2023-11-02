@@ -16,21 +16,7 @@ pub struct UdpHeader {
     pub destination_port: u16,
     pub length: u16,
     pub checksum: u16,
-    pub payload: Vec<u8>,
     pub malformed: bool,
-}
-
-impl UdpHeader {
-    fn malformed(payload: &[u8]) -> UdpHeader {
-        UdpHeader {
-            source_port: 0,
-            destination_port: 0,
-            length: 0,
-            checksum: 0,
-            payload: payload.to_vec(),
-            malformed: true,
-        }
-    }
 }
 
 /*
@@ -44,26 +30,29 @@ UDP Packet
 #[derive(Default, Debug, Clone)]
 pub struct UdpPacket {
     pub header: UdpHeader,
-    pub payload: Option<Box<dyn Layer>>,
+    pub payload: Vec<u8>,
+}
+
+impl UdpPacket {
+    pub fn new(packet: &[u8]) -> Option<UdpPacket> {
+        let packet = pnet::packet::udp::UdpPacket::new(packet)?;
+
+        let header = UdpHeader {
+            source_port: packet.get_source(),
+            destination_port: packet.get_destination(),
+            length: packet.get_length(),
+            checksum: packet.get_checksum(),
+            malformed: false,
+        };
+
+        Some(UdpPacket {
+            header,
+            payload: packet.payload().to_vec(),
+        })
+    }
 }
 
 impl Layer for UdpPacket {
-    fn deserialize(&mut self, packet: &[u8]) {
-        let packet_header = match pnet::packet::udp::UdpPacket::new(packet) {
-            None => UdpHeader::malformed(packet),
-            Some(header) => UdpHeader {
-                source_port: header.get_source(),
-                destination_port: header.get_destination(),
-                length: header.get_length(),
-                checksum: header.get_checksum(),
-                payload: header.payload().to_vec(),
-                malformed: false,
-            },
-        };
-        self.header = packet_header;
-        self.payload = None;
-    }
-
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         LinkedHashMap::<String, String>::from_iter([
             ("protocol".to_owned(), "udp".to_owned()),
@@ -82,7 +71,7 @@ impl Layer for UdpPacket {
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
-        self.payload.as_deref()
+        None
     }
 
     fn protocol_type(&self) -> ProtocolType {
