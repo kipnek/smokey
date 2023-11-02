@@ -34,7 +34,10 @@ impl LiveCapture {
             let Linktype(_cap_type) = cap.get_datalink();
 
             while let Ok(packet) = cap.next_packet() {
-                let result = sender.send(Box::new(EthernetFrame::new(index, packet.data)));
+                let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
+                    continue;
+                };
+                let result = sender.send(Box::new(eth_frame));
                 if result.is_err() {
                     // receiver was dropped
                     break;

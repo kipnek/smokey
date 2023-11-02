@@ -2,6 +2,7 @@ use crate::packets::shared_objs::{ExtendedType, ProtocolDescriptor, ProtocolType
 use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
 use linked_hash_map::LinkedHashMap;
+use pnet::packet::Packet;
 use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
@@ -33,8 +34,6 @@ pub struct Ipv4Header {
     pub destination_address: String,
     pub next_header: ProtocolDescriptor<ExtendedType<IpNextHeaderProtocol>>,
     pub flags: Ipv4Flags,
-    pub payload: Vec<u8>,
-    pub malformed: bool,
 }
 
 #[derive(Clone, Default, Debug)]
@@ -78,8 +77,6 @@ impl Ipv4Header {
                 dontfrag: false,
                 morefrag: false,
             },
-            payload: packet.to_vec(),
-            malformed: true,
         }
     }
     pub fn set_flags(number: u8) -> Ipv4Flags {
@@ -157,39 +154,41 @@ impl Debug for Ipv4Packet {
     }
 }
 
-impl Layer for Ipv4Packet {
-    fn deserialize(&mut self, packet: &[u8]) {
-        let packet_header = match pnet::packet::ipv4::Ipv4Packet::new(packet) {
-            None => Ipv4Header::malformed(packet),
-            Some(header) => Ipv4Header {
-                version_ihl: header.get_version(),
-                dscp: header.get_dscp(),
-                ecn: header.get_ecn(),
-                total_length: header.get_total_length(),
-                identification: header.get_total_length(),
-                options: Ipv4Header::set_options(header.get_options_iter()),
-                flags_fragment_offset: header.get_fragment_offset(),
-                time_to_live: header.get_ttl(),
-                header_checksum: header.get_checksum(),
-                source_address: header.get_source().to_string(),
-                destination_address: header.get_destination().to_string(),
-                next_header: set_next_header(header.get_next_level_protocol()),
-                flags: Ipv4Header::set_flags(header.get_flags()),
-                payload: packet.to_vec(),
-                malformed: false,
-            },
+impl Ipv4Packet {
+    pub fn new(packet: &[u8]) -> Option<Ipv4Packet> {
+        let packet = pnet::packet::ipv4::Ipv4Packet::new(packet)?;
+
+        let header = Ipv4Header {
+            version_ihl: packet.get_version(),
+            dscp: packet.get_dscp(),
+            ecn: packet.get_ecn(),
+            total_length: packet.get_total_length(),
+            identification: packet.get_total_length(),
+            options: Ipv4Header::set_options(packet.get_options_iter()),
+            flags_fragment_offset: packet.get_fragment_offset(),
+            time_to_live: packet.get_ttl(),
+            header_checksum: packet.get_checksum(),
+            source_address: packet.get_source().to_string(),
+            destination_address: packet.get_destination().to_string(),
+            next_header: set_next_header(packet.get_next_level_protocol()),
+            flags: Ipv4Header::set_flags(packet.get_flags()),
         };
 
-        let payload: Option<Box<dyn Layer>> = matches!(
-            &packet_header.next_header.protocol_type,
-            ExtendedType::Known(IpNextHeaderProtocols::Tcp | IpNextHeaderProtocols::Udp)
-        )
-        .then(|| Box::new(parse_udp(&packet_header.payload)) as _);
+        let payload = match header.next_header.protocol_type {
+            ExtendedType::Known(IpNextHeaderProtocols::Tcp) => {
+                TcpPacket::new(packet.payload()).map(|x| Box::new(x) as _)
+            }
+            ExtendedType::Known(IpNextHeaderProtocols::Udp) => {
+                UdpPacket::new(packet.payload()).map(|x| Box::new(x) as _)
+            }
+            ExtendedType::Known(_) | ExtendedType::Malformed => None,
+        };
 
-        self.header = packet_header;
-        self.payload = payload;
+        Some(Ipv4Packet { header, payload })
     }
+}
 
+impl Layer for Ipv4Packet {
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         let options_string = { self.header.options.iter() }
             .map(Ipv4Options::description)
@@ -242,7 +241,6 @@ impl Layer for Ipv4Packet {
                     self.header.flags.morefrag
                 ),
             ),
-            ("malformed".to_owned(), self.header.malformed.to_string()),
             ("options".to_owned(), options_string),
         ])
     }
@@ -269,11 +267,8 @@ impl Layer for Ipv4Packet {
 
     fn info(&self) -> String {
         format!(
-            "malformed {}, flags: MoreFrag: {} DontFrag: {} Reserved: {}",
-            self.header.malformed,
-            self.header.flags.morefrag,
-            self.header.flags.dontfrag,
-            self.header.flags.reserved
+            "flags: MoreFrag: {} DontFrag: {} Reserved: {}",
+            self.header.flags.morefrag, self.header.flags.dontfrag, self.header.flags.reserved
         )
     }
 }
@@ -324,18 +319,6 @@ fn set_next_header(
         protocol_name: protocol_to_string(next_header),
         protocol_type: ExtendedType::Known(next_header),
     }
-}
-
-fn parse_tcp(payload: &[u8]) -> TcpPacket {
-    let mut packet = TcpPacket::default();
-    packet.deserialize(payload);
-    packet
-}
-
-fn parse_udp(payload: &[u8]) -> UdpPacket {
-    let mut packet = UdpPacket::default();
-    packet.deserialize(payload);
-    packet
 }
 
 #[derive(Debug, Clone, Default)]

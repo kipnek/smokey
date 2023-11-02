@@ -22,8 +22,6 @@ pub struct TcpHeader {
     pub checksum: u16,
     pub urgent_pointer: u16,
     pub flags: TcpFlags,
-    pub payload: Vec<u8>,
-    pub malformed: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -47,13 +45,6 @@ impl TcpHeader {
             fin: (flags_byte & 0b00_0001) != 0,
         }
     }
-
-    fn malformed(payload: &[u8]) -> TcpHeader {
-        TcpHeader {
-            payload: payload.to_vec(),
-            ..Default::default()
-        }
-    }
 }
 
 /*
@@ -67,31 +58,33 @@ TCP Packet
 #[derive(Default, Debug, Clone)]
 pub struct TcpPacket {
     pub header: TcpHeader,
-    pub payload: Option<Box<dyn Layer>>,
+    pub payload: Vec<u8>,
+}
+
+impl TcpPacket {
+    pub fn new(packet: &[u8]) -> Option<TcpPacket> {
+        let packet = pnet::packet::tcp::TcpPacket::new(packet)?;
+
+        let header = TcpHeader {
+            source_port: packet.get_source(),
+            destination_port: packet.get_destination(),
+            sequence_number: packet.get_sequence(),
+            acknowledgment_number: packet.get_acknowledgement(),
+            data_offset_reserved_flags: packet.get_data_offset(),
+            window_size: packet.get_window(),
+            checksum: packet.get_checksum(),
+            urgent_pointer: packet.get_urgent_ptr(),
+            flags: TcpHeader::set_tcp_flags(packet.get_flags()),
+        };
+
+        Some(TcpPacket {
+            header,
+            payload: packet.payload().to_vec(),
+        })
+    }
 }
 
 impl Layer for TcpPacket {
-    fn deserialize(&mut self, packet: &[u8]) {
-        let header = match pnet::packet::tcp::TcpPacket::new(packet) {
-            None => TcpHeader::malformed(packet),
-            Some(header) => TcpHeader {
-                source_port: header.get_source(),
-                destination_port: header.get_destination(),
-                sequence_number: header.get_sequence(),
-                acknowledgment_number: header.get_acknowledgement(),
-                data_offset_reserved_flags: header.get_data_offset(),
-                window_size: header.get_window(),
-                checksum: header.get_checksum(),
-                urgent_pointer: header.get_urgent_ptr(),
-                flags: TcpHeader::set_tcp_flags(header.get_flags()),
-                payload: header.payload().to_vec(),
-                malformed: false,
-            },
-        };
-        self.header = header;
-        self.payload = None;
-    }
-
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         LinkedHashMap::<String, String>::from_iter([
             ("protocol".to_owned(), "tcp".to_owned()),
@@ -131,12 +124,11 @@ impl Layer for TcpPacket {
                     u8::from(self.header.flags.fin),
                 ),
             ),
-            ("malformed".to_owned(), self.header.malformed.to_string()),
         ])
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
-        self.payload.as_deref()
+        None
     }
     fn protocol_type(&self) -> ProtocolType {
         ProtocolType::Tcp

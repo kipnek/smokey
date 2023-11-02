@@ -4,8 +4,6 @@ use linked_hash_map::LinkedHashMap;
 use std::fmt::Debug;
 
 pub trait Layer: Send + Sync + Debug {
-    fn deserialize(&mut self, packet: &[u8]);
-
     fn get_summary(&self) -> LinkedHashMap<String, String>;
 
     fn get_next(&self) -> Option<&dyn Layer>;

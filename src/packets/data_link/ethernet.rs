@@ -25,8 +25,6 @@ pub struct EthernetHeader {
     pub source_mac: String,
     pub destination_mac: String,
     pub ether_type: ProtocolDescriptor<ExtendedType<EtherType>>,
-    pub payload: Vec<u8>,
-    pub malformed: bool,
 }
 impl SetProtocolDescriptor<EtherType> for EthernetHeader {
     fn set_proto_descriptor(
@@ -40,17 +38,6 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
         ProtocolDescriptor {
             protocol_name,
             protocol_type: proto,
-        }
-    }
-}
-impl EthernetHeader {
-    pub fn malformed(packet: &[u8]) -> EthernetHeader {
-        EthernetHeader {
-            source_mac: String::new(),
-            destination_mac: String::new(),
-            ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Malformed),
-            payload: packet.to_vec(),
-            malformed: true,
         }
     }
 }
@@ -75,41 +62,43 @@ pub struct EthernetFrame {
 }
 
 impl EthernetFrame {
-    pub fn new(id: i32, packet: &[u8]) -> Self {
+    pub fn new(id: i32, packet: &pcap::Packet) -> Option<Self> {
+        let packet = EthernetPacket::new(packet.data)?;
+
+        let header = EthernetHeader {
+            source_mac: packet.get_source().to_string(),
+            destination_mac: packet.get_destination().to_string(),
+            ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Known(
+                packet.get_ethertype(),
+            )),
+        };
+
+        let payload = match &header.ether_type.protocol_type {
+            ExtendedType::Known(EtherTypes::Ipv4) => {
+                Ipv4Packet::new(packet.payload()).map(|x| Box::new(x) as _)
+            }
+            /* ExtendedType::Known(EtherTypes::Ipv6) => {
+                Ipv6Packet::new(packet.payload()).map(|x| Box::new(x) as _)
+            } */
+            _ => None,
+        };
+
         let mut frame = EthernetFrame {
             id,
             timestamp: Utc::now().to_string(),
-            ..Default::default()
+            header,
+            description: Description::default(),
+            payload,
         };
-        frame.deserialize(packet);
-        frame
+
+        frame.description = frame.get_short();
+
+        Some(frame)
     }
 }
 
 //trait impls
 impl Layer for EthernetFrame {
-    fn deserialize(&mut self, packet: &[u8]) {
-        let packet_header: EthernetHeader = match EthernetPacket::new(packet) {
-            None => EthernetHeader::malformed(packet),
-            Some(header) => EthernetHeader {
-                source_mac: header.get_source().to_string(),
-                destination_mac: header.get_destination().to_string(),
-                ether_type: EthernetHeader::set_proto_descriptor(ExtendedType::Known(
-                    header.get_ethertype(),
-                )),
-                payload: header.payload().to_vec(),
-                malformed: false,
-            },
-        };
-        self.payload = matches!(
-            packet_header.ether_type.protocol_type,
-            ExtendedType::Known(EtherTypes::Ipv4)
-        )
-        .then(|| Box::new(parse_ipv4(&packet_header.payload)) as _);
-        self.header = packet_header;
-        self.description = self.get_short();
-    }
-
     fn get_summary(&self) -> LinkedHashMap<String, String> {
         LinkedHashMap::<String, String>::from_iter([
             ("protocol".to_owned(), "ethernet".to_owned()),
@@ -122,7 +111,6 @@ impl Layer for EthernetFrame {
                 "EtherType".to_owned(),
                 self.header.ether_type.protocol_name.clone(),
             ),
-            ("malformed".to_owned(), self.header.malformed.to_string()),
         ])
     }
 
@@ -216,12 +204,6 @@ fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
         layer = next;
     }
     layer
-}
-
-fn parse_ipv4(payload: &[u8]) -> Ipv4Packet {
-    let mut packet = Ipv4Packet::default();
-    packet.deserialize(payload);
-    packet
 }
 
 fn set_name(proto: EtherType) -> String {
