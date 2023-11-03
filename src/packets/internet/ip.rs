@@ -1,4 +1,3 @@
-use crate::packets::shared_objs::{ExtendedType, ProtocolDescriptor, ProtocolType};
 use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
 use pnet::packet::Packet;
@@ -8,7 +7,7 @@ use pnet::packet::{
 };
 use std::fmt::Write;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Ipv4Header {
     pub version_ihl: u8,
     pub dscp: u8,
@@ -21,7 +20,7 @@ pub struct Ipv4Header {
     pub header_checksum: u16,
     pub source_address: String,
     pub destination_address: String,
-    pub next_header: ProtocolDescriptor<ExtendedType<IpNextHeaderProtocol>>,
+    pub next_header: IpNextHeaderProtocol,
     pub flags: Ipv4Flags,
 }
 
@@ -93,7 +92,7 @@ impl Ipv4Options {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
@@ -115,18 +114,18 @@ impl Ipv4Packet {
             header_checksum: packet.get_checksum(),
             source_address: packet.get_source().to_string(),
             destination_address: packet.get_destination().to_string(),
-            next_header: set_next_header(packet.get_next_level_protocol()),
+            next_header: packet.get_next_level_protocol(),
             flags: Ipv4Header::set_flags(packet.get_flags()),
         };
 
-        let payload = match header.next_header.protocol_type {
-            ExtendedType::Known(IpNextHeaderProtocols::Tcp) => {
+        let payload = match header.next_header {
+            IpNextHeaderProtocols::Tcp => {
                 TcpPacket::new(packet.payload()).map(|x| Box::new(x) as _)
             }
-            ExtendedType::Known(IpNextHeaderProtocols::Udp) => {
+            IpNextHeaderProtocols::Udp => {
                 UdpPacket::new(packet.payload()).map(|x| Box::new(x) as _)
             }
-            ExtendedType::Known(_) | ExtendedType::Malformed => None,
+            _ => None,
         };
 
         Some(Ipv4Packet { header, payload })
@@ -174,19 +173,14 @@ time_to_live: {time_to_live}
 header_checksum: {header_checksum}
 source_address: {source_address}
 destination_address: {destination_address}
-next_header: protocol : {}
+next_header: protocol : {next_header}
 flags: reserved : {reserved}, dont fragment : {dontfrag},  more fragment : {morefrag}
-options: {}",
-            next_header.protocol_name, options_string
+options: {options_string}"
         );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
         self.payload.as_deref()
-    }
-
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Ipv4
     }
 
     fn source(&self) -> String {
@@ -216,32 +210,4 @@ pub struct Ipv6Header {
     pub source: String,
     pub destination: String,
     pub version: u8,
-}
-
-// Helper functions
-
-fn protocol_to_string(proto: IpNextHeaderProtocol) -> &'static str {
-    match proto {
-        IpNextHeaderProtocols::Ipv4 => "IPv4",
-        IpNextHeaderProtocols::Tcp => "Tcp",
-        IpNextHeaderProtocols::Udp => "Udp",
-        IpNextHeaderProtocols::Ipv6 => "IPv6",
-        _ => "Unknown",
-    }
-}
-
-fn set_next_header(
-    next_header: IpNextHeaderProtocol,
-) -> ProtocolDescriptor<ExtendedType<IpNextHeaderProtocol>> {
-    ProtocolDescriptor {
-        protocol_name: protocol_to_string(next_header),
-        protocol_type: ExtendedType::Known(next_header),
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub enum ExtendedNextHeader {
-    Known(IpNextHeaderProtocol),
-    #[default]
-    Malformed,
 }

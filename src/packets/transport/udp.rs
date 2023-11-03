@@ -1,4 +1,3 @@
-use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::Write;
@@ -59,10 +58,6 @@ malformed: {malformed}"
 
     fn get_next(&self) -> Option<&dyn Layer> {
         None
-    }
-
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Udp
     }
 
     fn source(&self) -> String {
