@@ -1,3 +1,4 @@
+use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
@@ -96,9 +97,9 @@ impl Application for LiveCapture {
             column = column.push(scrollable(content).height(Length::Fill).width(Length::Fill));
         }
 
-        if let Some(frame) = { self.selected }
-            .and_then(|selected_id| get_describable(&self.captured_packets, selected_id))
-        {
+        if let Some(frame) = { self.selected }.and_then(|selected_id| {
+            { self.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
+        }) {
             let column_children = { frame.get_long().iter().flatten() }
                 .map(|(key, value)| Text::new(format!("{key}: {value}")).into())
                 .collect();
@@ -159,13 +160,9 @@ fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
         .collect()
 }
 
-fn get_describable(vectors: &[Box<dyn Describable>], id_to_find: i32) -> Option<&dyn Describable> {
-    { vectors.iter() }.find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
-}
-
 fn append_describables(
-    main_vector: &mut Vec<Vec<Box<dyn Describable>>>,
-    mut describables: Vec<Box<dyn Describable>>,
+    main_vector: &mut Vec<Vec<EthernetFrame>>,
+    mut describables: Vec<EthernetFrame>,
 ) {
     if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
         main_vector.push(Vec::with_capacity(1000));
@@ -183,8 +180,8 @@ fn append_describables(
 }
 
 fn fetch_data_from_channel(
-    receiver: &mut Receiver<Box<dyn Describable>>,
-    packets: &mut Vec<Box<dyn Describable>>,
+    receiver: &mut Receiver<EthernetFrame>,
+    packets: &mut Vec<EthernetFrame>,
 ) {
     packets.extend(receiver.try_iter());
 }
