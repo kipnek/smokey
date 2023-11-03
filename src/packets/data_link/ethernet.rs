@@ -120,10 +120,7 @@ impl Describable for EthernetFrame {
             Some(network_layer) => (network_layer.source(), network_layer.destination()),
         };
 
-        let layer: &dyn Layer = match self.payload.as_deref() {
-            Some(payload) => get_innermost_layer(payload),
-            None => self as &dyn Layer,
-        };
+        let layer: &dyn Layer = get_innermost_layer(self);
 
         Description {
             id: self.id,
