@@ -8,16 +8,6 @@ use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
 use std::fmt::Write;
 
-/*
-
-
-
-Ethernet Header
-
-
-
-
- */
 #[derive(Default, Clone, Debug)]
 pub struct EthernetHeader {
     pub source_mac: String,
@@ -39,16 +29,6 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
         }
     }
 }
-
-/*
-
-
-
-Ethernet Frame
-
-
-
- */
 
 #[derive(Default, Debug)]
 pub struct EthernetFrame {
@@ -179,21 +159,7 @@ impl Describable for EthernetFrame {
     }
 }
 
-/*
-
-
-
-helper functions
-
-
-
- */
-
-//might be in another trait
-fn get_innermost_info(mut layer: &dyn Layer) -> (ProtocolType, String) {
-    layer = get_innermost_layer(layer);
-    (layer.protocol_type(), layer.info())
-}
+// helper functions
 
 fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
     while let Some(next) = layer.get_next() {

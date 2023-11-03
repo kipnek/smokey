@@ -2,13 +2,6 @@ use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::Write;
-/*
-
-
-TCP header
-
-
- */
 
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
@@ -45,14 +38,6 @@ impl TcpHeader {
         }
     }
 }
-
-/*
-
-
-TCP Packet
-
-
- */
 
 #[derive(Default, Debug, Clone)]
 pub struct TcpPacket {

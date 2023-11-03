@@ -2,13 +2,6 @@ use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::Write;
-/*
-
-
-Udp Header
-
-
- */
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
     pub source_port: u16,
@@ -17,14 +10,6 @@ pub struct UdpHeader {
     pub checksum: u16,
     pub malformed: bool,
 }
-
-/*
-
-
-UDP Packet
-
-
- */
 
 #[derive(Default, Debug, Clone)]
 pub struct UdpPacket {

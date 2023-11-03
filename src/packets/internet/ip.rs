@@ -6,19 +6,8 @@ use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
 };
-
 use std::fmt::Write;
-use std::fmt::{Debug, Formatter};
 
-/*
-
-
-
-IPV4 Header
-
-
-
- */
 #[derive(Default, Debug, Clone)]
 pub struct Ipv4Header {
     pub version_ihl: u8,
@@ -55,30 +44,6 @@ pub enum Ipv4Options {
 }
 
 impl Ipv4Header {
-    pub fn malformed(packet: &[u8]) -> Ipv4Header {
-        Ipv4Header {
-            version_ihl: 4,
-            dscp: 0,
-            ecn: 0,
-            total_length: 0,
-            identification: 0,
-            options: vec![],
-            flags_fragment_offset: 0,
-            time_to_live: 0,
-            header_checksum: 0,
-            source_address: String::new(),
-            destination_address: String::new(),
-            next_header: ProtocolDescriptor {
-                protocol_name: "malformed",
-                protocol_type: ExtendedType::Malformed,
-            },
-            flags: Ipv4Flags {
-                reserved: false,
-                dontfrag: false,
-                morefrag: false,
-            },
-        }
-    }
     pub fn set_flags(number: u8) -> Ipv4Flags {
         Ipv4Flags {
             reserved: (number & 0b100) != 0,
@@ -128,30 +93,10 @@ impl Ipv4Options {
     }
 }
 
-/*
-
-
-
-IPv4 Packets
-
-
-
- */
-
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
-}
-
-//impls for ipv4 packet
-impl Debug for Ipv4Packet {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Ipv4Packet")
-            .field("header", &self.header)
-            .field("payload", &self.payload)
-            .finish()
-    }
 }
 
 impl Ipv4Packet {
@@ -260,15 +205,6 @@ options: {}",
     }
 }
 
-/*
-
-
-
-IPV6
-
-
-
- */
 #[derive(Debug, Clone)]
 pub struct Ipv6Header {
     pub payload: Vec<u8>,
@@ -282,13 +218,8 @@ pub struct Ipv6Header {
     pub version: u8,
 }
 
-/*
+// Helper functions
 
-
-Helper functions
-
-
- */
 fn protocol_to_string(proto: IpNextHeaderProtocol) -> &'static str {
     match proto {
         IpNextHeaderProtocols::Ipv4 => "IPv4",

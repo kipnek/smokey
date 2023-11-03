@@ -1,5 +1,4 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::traits::Describable;
 use pcap::{Device, Linktype};
 use std::sync::mpsc::{self, Receiver};
 use std::thread;

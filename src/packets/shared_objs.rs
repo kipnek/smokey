@@ -14,7 +14,7 @@ pub struct Summary {
     pub info: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Description {
     pub id: i32,
     pub id_string: String,
@@ -24,26 +24,14 @@ pub struct Description {
     pub destination: String,
     pub info: String,
 }
-impl Default for Description {
-    fn default() -> Self {
-        Description {
-            id: 0,
-            id_string: String::new(),
-            timestamp: String::new(),
-            protocol: ProtocolType::Unknown, // Assuming ProtocolType also implements Default
-            source: String::new(),
-            destination: String::new(),
-            info: String::new(),
-        }
-    }
-}
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum ProtocolType {
     Ethernet,
     Ipv4,
     Udp,
     Tcp,
+    #[default]
     Unknown,
     // ... other protocols
 }
