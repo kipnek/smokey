@@ -1,7 +1,7 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::traits::Describable;
-use crossbeam::channel::Receiver;
 use pcap::{Device, Linktype};
+use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
 #[derive(Default)]
@@ -15,7 +15,7 @@ pub struct LiveCapture {
 
 impl LiveCapture {
     pub fn capture(&mut self) {
-        let (sender, receiver) = crossbeam::channel::unbounded();
+        let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
 
         thread::spawn(move || {

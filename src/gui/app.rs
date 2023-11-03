@@ -2,7 +2,6 @@ use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
-use crossbeam::channel::Receiver;
 
 use iced::widget::{self, button, row, scrollable, Text};
 use iced::{
@@ -42,7 +41,7 @@ impl Application for LiveCapture {
         match message {
             Message::Tick => {
                 if let Some(receiver) = self.receiver.as_mut() {
-                    fetch_data_from_channel(receiver, &mut self.captured_packets);
+                    self.captured_packets.extend(receiver.try_iter());
                 }
             }
             Message::Start => self.capture(),
@@ -177,13 +176,6 @@ fn append_describables(
         new_vec.extend(describables.drain(0..describables.len().min(1000)));
         main_vector.push(new_vec);
     }
-}
-
-fn fetch_data_from_channel(
-    receiver: &mut Receiver<EthernetFrame>,
-    packets: &mut Vec<EthernetFrame>,
-) {
-    packets.extend(receiver.try_iter());
 }
 
 /*
