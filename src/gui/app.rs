@@ -99,10 +99,8 @@ impl Application for LiveCapture {
         if let Some(frame) = { self.selected }.and_then(|selected_id| {
             { self.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
         }) {
-            let column_children = { frame.get_long().iter().flatten() }
-                .map(|(key, value)| Text::new(format!("{key}: {value}")).into())
-                .collect();
-            let content = widget::column(column_children).padding(13).spacing(5);
+            let text = Text::new(frame.get_long());
+            let content = widget::column!(text).padding(13).spacing(5);
             column = column.push(scrollable(content).height(Length::Fill));
         }
 
@@ -125,7 +123,7 @@ impl Application for LiveCapture {
 impl Description {
     pub fn view(&self) -> Element<Message> {
         row![
-            Text::new(self.id.to_string()).width(Length::FillPortion(90)),
+            Text::new(&self.id_string).width(Length::FillPortion(90)),
             Text::new(&self.timestamp).width(Length::FillPortion(250)),
             Text::new(&self.source).width(Length::FillPortion(230)),
             Text::new(&self.destination).width(Length::FillPortion(230)),

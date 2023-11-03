@@ -1,10 +1,9 @@
 use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
-use linked_hash_map::LinkedHashMap;
 
 use std::fmt::Debug;
 
 pub trait Layer: Send + Sync + Debug {
-    fn get_summary(&self) -> LinkedHashMap<String, String>;
+    fn append_summary(&self, target: &mut String);
 
     fn get_next(&self) -> Option<&dyn Layer>;
 
@@ -15,23 +14,15 @@ pub trait Layer: Send + Sync + Debug {
     fn source(&self) -> String;
     fn destination(&self) -> String;
 
-    fn box_clone(&self) -> Box<dyn Layer>;
-
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_owned()
-    }
-}
-
-impl Clone for Box<dyn Layer> {
-    fn clone(&self) -> Self {
-        self.box_clone()
     }
 }
 
 pub trait Describable: Send + Sync + Debug + Layer {
     fn get_short(&self) -> Description;
 
-    fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;
+    fn get_long(&self) -> String;
 
     fn get_id(&self) -> i32;
 

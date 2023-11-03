@@ -1,13 +1,13 @@
 use crate::packets::shared_objs::{ExtendedType, ProtocolDescriptor, ProtocolType};
 use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::Packet;
 use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
 };
 
+use std::fmt::Write;
 use std::fmt::{Debug, Formatter};
 
 /*
@@ -69,7 +69,7 @@ impl Ipv4Header {
             source_address: String::new(),
             destination_address: String::new(),
             next_header: ProtocolDescriptor {
-                protocol_name: "malformed".to_owned(),
+                protocol_name: "malformed",
                 protocol_type: ExtendedType::Malformed,
             },
             flags: Ipv4Flags {
@@ -138,7 +138,7 @@ IPv4 Packets
 
  */
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
     pub payload: Option<Box<dyn Layer>>,
@@ -189,60 +189,51 @@ impl Ipv4Packet {
 }
 
 impl Layer for Ipv4Packet {
-    fn get_summary(&self) -> LinkedHashMap<String, String> {
-        let options_string = { self.header.options.iter() }
+    fn append_summary(&self, target: &mut String) {
+        let Ipv4Header {
+            version_ihl,
+            dscp,
+            ecn,
+            total_length,
+            identification,
+            options,
+            flags_fragment_offset,
+            time_to_live,
+            header_checksum,
+            source_address,
+            destination_address,
+            next_header,
+            flags:
+                Ipv4Flags {
+                    reserved,
+                    dontfrag,
+                    morefrag,
+                },
+        } = &self.header;
+
+        let options_string = { options.iter() }
             .map(Ipv4Options::description)
             .collect::<Vec<&str>>()
             .join("\n");
 
-        LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_owned(), "ipv4".to_owned()),
-            ("version".to_owned(), self.header.version_ihl.to_string()),
-            ("dscp".to_owned(), self.header.dscp.to_string()),
-            ("ecn".to_owned(), self.header.ecn.to_string()),
-            (
-                "total_length".to_owned(),
-                self.header.total_length.to_string(),
-            ),
-            (
-                "identification".to_owned(),
-                self.header.identification.to_string(),
-            ),
-            (
-                "flags_fragment_offset".to_owned(),
-                self.header.flags_fragment_offset.to_string(),
-            ),
-            (
-                "time_to_live".to_owned(),
-                self.header.time_to_live.to_string(),
-            ),
-            (
-                "header_checksum".to_owned(),
-                self.header.header_checksum.to_string(),
-            ),
-            (
-                "source_address".to_owned(),
-                self.header.source_address.clone(),
-            ),
-            (
-                "destination_address".to_owned(),
-                self.header.destination_address.clone(),
-            ),
-            (
-                "next_header".to_owned(),
-                format!("protocol : {}", self.header.next_header.protocol_name,),
-            ),
-            (
-                "flags".to_owned(),
-                format!(
-                    "reserved : {}, dont fragment : {},  more fragment : {}",
-                    self.header.flags.reserved,
-                    self.header.flags.dontfrag,
-                    self.header.flags.morefrag
-                ),
-            ),
-            ("options".to_owned(), options_string),
-        ])
+        let _ = write!(
+            target,
+            "protocol: ipv4
+version: {version_ihl}
+dscp: {dscp}
+ecn: {ecn}
+total_length: {total_length}
+identification: {identification}
+flags_fragment_offset: {flags_fragment_offset}
+time_to_live: {time_to_live}
+header_checksum: {header_checksum}
+source_address: {source_address}
+destination_address: {destination_address}
+next_header: protocol : {}
+flags: reserved : {reserved}, dont fragment : {dontfrag},  more fragment : {morefrag}
+options: {}",
+            next_header.protocol_name, options_string
+        );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
@@ -259,10 +250,6 @@ impl Layer for Ipv4Packet {
 
     fn destination(&self) -> String {
         self.header.destination_address.clone()
-    }
-
-    fn box_clone(&self) -> Box<dyn Layer> {
-        Box::new(self.clone())
     }
 
     fn info(&self) -> String {
@@ -302,13 +289,13 @@ Helper functions
 
 
  */
-fn protocol_to_string(proto: IpNextHeaderProtocol) -> String {
+fn protocol_to_string(proto: IpNextHeaderProtocol) -> &'static str {
     match proto {
-        IpNextHeaderProtocols::Ipv4 => "IPv4".to_owned(),
-        IpNextHeaderProtocols::Tcp => "Tcp".to_owned(),
-        IpNextHeaderProtocols::Udp => "Udp".to_owned(),
-        IpNextHeaderProtocols::Ipv6 => "IPv6".to_owned(),
-        _ => "Unknown".to_owned(),
+        IpNextHeaderProtocols::Ipv4 => "IPv4",
+        IpNextHeaderProtocols::Tcp => "Tcp",
+        IpNextHeaderProtocols::Udp => "Udp",
+        IpNextHeaderProtocols::Ipv6 => "IPv6",
+        _ => "Unknown",
     }
 }
 

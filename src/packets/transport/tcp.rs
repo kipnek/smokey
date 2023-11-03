@@ -1,8 +1,7 @@
 use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::Packet;
-
+use std::fmt::Write;
 /*
 
 
@@ -85,46 +84,40 @@ impl TcpPacket {
 }
 
 impl Layer for TcpPacket {
-    fn get_summary(&self) -> LinkedHashMap<String, String> {
-        LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_owned(), "tcp".to_owned()),
-            (
-                "source_port".to_owned(),
-                self.header.source_port.to_string(),
-            ),
-            (
-                "destination_port".to_owned(),
-                self.header.destination_port.to_string(),
-            ),
-            (
-                "acknowledgment_number".to_owned(),
-                self.header.acknowledgment_number.to_string(),
-            ),
-            (
-                "data_offset_reserved_flags".to_owned(),
-                self.header.data_offset_reserved_flags.to_string(),
-            ),
-            (
-                "window_size".to_owned(),
-                self.header.window_size.to_string(),
-            ),
-            ("checksum".to_owned(), self.header.checksum.to_string()),
-            (
-                "urgent_pointer".to_owned(),
-                self.header.urgent_pointer.to_string(),
-            ),
-            (
-                "flags".to_owned(),
-                format!(
-                    "ack : {}, psh : {}, rst : {}, syn : {}, fin : {}",
-                    u8::from(self.header.flags.ack),
-                    u8::from(self.header.flags.psh),
-                    u8::from(self.header.flags.rst),
-                    u8::from(self.header.flags.syn),
-                    u8::from(self.header.flags.fin),
-                ),
-            ),
-        ])
+    fn append_summary(&self, target: &mut String) {
+        let TcpHeader {
+            source_port,
+            destination_port,
+            sequence_number: _,
+            acknowledgment_number,
+            data_offset_reserved_flags,
+            window_size,
+            checksum,
+            urgent_pointer,
+            flags:
+                TcpFlags {
+                    urg,
+                    ack,
+                    psh,
+                    rst,
+                    syn,
+                    fin,
+                },
+        } = &self.header;
+        let [urg, ack, psh, rst, syn, fin] = [*urg, *ack, *psh, *rst, *syn, *fin].map(u8::from);
+
+        let _ = write!(
+            target,
+            "protocol: tcp,
+source_port: {source_port}
+destination_port: {destination_port}
+acknowledgment_number: {acknowledgment_number}
+data_offset_reserved_flags: {data_offset_reserved_flags}
+window_size: {window_size}
+checksum: {checksum}
+urgent_pointer: {urgent_pointer}
+flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}"
+        );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
@@ -140,10 +133,6 @@ impl Layer for TcpPacket {
 
     fn destination(&self) -> String {
         self.header.destination_port.to_string()
-    }
-
-    fn box_clone(&self) -> Box<dyn Layer> {
-        Box::new(self.clone())
     }
 
     fn info(&self) -> String {

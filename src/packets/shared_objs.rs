@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug, Clone, Default)]
 pub struct ProtocolDescriptor<T> {
-    pub protocol_name: String,
+    pub protocol_name: &'static str,
     pub protocol_type: T,
 }
 
@@ -17,6 +17,7 @@ pub struct Summary {
 #[derive(Debug, Clone)]
 pub struct Description {
     pub id: i32,
+    pub id_string: String,
     pub timestamp: String,
     pub protocol: ProtocolType,
     pub source: String,
@@ -27,6 +28,7 @@ impl Default for Description {
     fn default() -> Self {
         Description {
             id: 0,
+            id_string: String::new(),
             timestamp: String::new(),
             protocol: ProtocolType::Unknown, // Assuming ProtocolType also implements Default
             source: String::new(),

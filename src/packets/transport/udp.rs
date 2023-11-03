@@ -1,8 +1,7 @@
 use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::Packet;
-
+use std::fmt::Write;
 /*
 
 
@@ -53,21 +52,24 @@ impl UdpPacket {
 }
 
 impl Layer for UdpPacket {
-    fn get_summary(&self) -> LinkedHashMap<String, String> {
-        LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_owned(), "udp".to_owned()),
-            (
-                "source_port".to_owned(),
-                self.header.source_port.to_string(),
-            ),
-            (
-                "destination_port".to_owned(),
-                self.header.destination_port.to_string(),
-            ),
-            ("length".to_owned(), self.header.length.to_string()),
-            ("checksum".to_owned(), self.header.checksum.to_string()),
-            ("malformed".to_owned(), self.header.malformed.to_string()),
-        ])
+    fn append_summary(&self, target: &mut String) {
+        let UdpHeader {
+            source_port,
+            destination_port,
+            length,
+            checksum,
+            malformed,
+        } = &self.header;
+
+        let _ = write!(
+            target,
+            "protocol: udp
+source_port: {source_port}
+destination_port: {destination_port}
+length: {length}
+checksum: {checksum}
+malformed: {malformed}"
+        );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
@@ -84,10 +86,6 @@ impl Layer for UdpPacket {
 
     fn destination(&self) -> String {
         self.header.destination_port.to_string()
-    }
-
-    fn box_clone(&self) -> Box<dyn Layer> {
-        Box::new(self.clone())
     }
 
     fn info(&self) -> String {
