@@ -1,4 +1,3 @@
-use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::Write;
@@ -107,9 +106,6 @@ flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}"
 
     fn get_next(&self) -> Option<&dyn Layer> {
         None
-    }
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Tcp
     }
 
     fn source(&self) -> String {

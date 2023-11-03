@@ -1,4 +1,4 @@
-use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
+use crate::packets::shared_objs::Description;
 
 use std::fmt::Debug;
 
@@ -6,10 +6,6 @@ pub trait Layer: Send + Sync + Debug {
     fn append_summary(&self, target: &mut String);
 
     fn get_next(&self) -> Option<&dyn Layer>;
-
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Unknown // or a suitable default
-    }
 
     fn source(&self) -> String;
     fn destination(&self) -> String;
@@ -29,9 +25,6 @@ pub trait Describable: Send + Sync + Debug + Layer {
     fn get_description(&self) -> &Description;
 }
 
-pub trait SetProtocolDescriptor<T>: Send + Debug {
-    fn set_proto_descriptor(proto: ExtendedType<T>) -> ProtocolDescriptor<ExtendedType<T>>;
-}
 /*
 If you want to filter or search packets based on specific criteria like port or
 address, you would generally implement accessor methods in the Layer trait and
