@@ -1,8 +1,6 @@
-use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
-use crossbeam::channel::Receiver;
 
 use iced::widget::{self, button, row, scrollable, Text};
 use iced::{
@@ -42,7 +40,7 @@ impl Application for LiveCapture {
         match message {
             Message::Tick => {
                 if let Some(receiver) = self.receiver.as_mut() {
-                    fetch_data_from_channel(receiver, &mut self.captured_packets);
+                    self.captured_packets.extend(receiver.try_iter());
                 }
             }
             Message::Start => self.capture(),
@@ -100,10 +98,8 @@ impl Application for LiveCapture {
         if let Some(frame) = { self.selected }.and_then(|selected_id| {
             { self.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
         }) {
-            let column_children = { frame.get_long().iter().flatten() }
-                .map(|(key, value)| Text::new(format!("{key}: {value}")).into())
-                .collect();
-            let content = widget::column(column_children).padding(13).spacing(5);
+            let text = Text::new(frame.get_long());
+            let content = widget::column!(text).padding(13).spacing(5);
             column = column.push(scrollable(content).height(Length::Fill));
         }
 
@@ -126,7 +122,7 @@ impl Application for LiveCapture {
 impl Description {
     pub fn view(&self) -> Element<Message> {
         row![
-            Text::new(self.id.to_string()).width(Length::FillPortion(90)),
+            Text::new(&self.id_string).width(Length::FillPortion(90)),
             Text::new(&self.timestamp).width(Length::FillPortion(250)),
             Text::new(&self.source).width(Length::FillPortion(230)),
             Text::new(&self.destination).width(Length::FillPortion(230)),
@@ -139,70 +135,6 @@ impl Description {
         .into()
     }
 }
-/*
-
-helper functions
-
- */
-
-fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
-    { descriptions.into_iter() }
-        .flat_map(|desc| {
-            [
-                desc.id.to_string(),
-                desc.timestamp.clone(),
-                desc.protocol.to_string(),
-                desc.source.clone(),
-                desc.destination.clone(),
-                desc.info.clone(),
-            ]
-        })
-        .collect()
-}
-
-fn append_describables(
-    main_vector: &mut Vec<Vec<EthernetFrame>>,
-    mut describables: Vec<EthernetFrame>,
-) {
-    if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
-        main_vector.push(Vec::with_capacity(1000));
-    }
-
-    let last_vector = main_vector.last_mut().unwrap();
-    let items_to_append = describables.len().min(1000 - last_vector.len());
-    last_vector.extend(describables.drain(0..items_to_append));
-
-    while !describables.is_empty() {
-        let mut new_vec = Vec::with_capacity(1000);
-        new_vec.extend(describables.drain(0..describables.len().min(1000)));
-        main_vector.push(new_vec);
-    }
-}
-
-fn fetch_data_from_channel(
-    receiver: &mut Receiver<EthernetFrame>,
-    packets: &mut Vec<EthernetFrame>,
-) {
-    packets.extend(receiver.try_iter());
-}
-
-/*
-async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>) {
-    loop {
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        let mut batch = Vec::with_capacity(100);
-        for _ in 0..100 {
-            match receiver.try_recv() {
-                Ok(data) => batch.push(data),
-                Err(_) => break,
-            }
-        }
-        if let Ok(mut lock) = packets.lock() {
-            append_describables(&mut lock, batch);
-        }
-    }
-}
-*/
 
 /*
 //this is just boilerplate for the cache
@@ -213,5 +145,4 @@ let mut cache = Cache::new();
 let ui = cache.draw(|| {
     Column::new().push(Text::new("This layout is cached!"))
 });
-
  */

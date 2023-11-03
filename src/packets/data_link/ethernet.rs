@@ -4,22 +4,10 @@ use crate::packets::{
     traits::{Describable, Layer, SetProtocolDescriptor},
 };
 use chrono::Utc;
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
+use std::fmt::Write;
 
-use std::default::Default;
-
-/*
-
-
-
-Ethernet Header
-
-
-
-
- */
 #[derive(Default, Clone, Debug)]
 pub struct EthernetHeader {
     pub source_mac: String,
@@ -32,7 +20,7 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
     ) -> ProtocolDescriptor<ExtendedType<EtherType>> {
         let protocol_name = match proto {
             ExtendedType::Known(ether_type) => set_name(ether_type),
-            ExtendedType::Malformed => "malformed".to_owned(),
+            ExtendedType::Malformed => "malformed",
         };
 
         ProtocolDescriptor {
@@ -42,17 +30,7 @@ impl SetProtocolDescriptor<EtherType> for EthernetHeader {
     }
 }
 
-/*
-
-
-
-Ethernet Frame
-
-
-
- */
-
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug)]
 pub struct EthernetFrame {
     pub id: i32,
     pub timestamp: String,
@@ -99,19 +77,17 @@ impl EthernetFrame {
 
 //trait impls
 impl Layer for EthernetFrame {
-    fn get_summary(&self) -> LinkedHashMap<String, String> {
-        LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_owned(), "ethernet".to_owned()),
-            ("Source Mac".to_owned(), self.header.source_mac.clone()),
-            (
-                "Destination Mac".to_owned(),
-                self.header.destination_mac.clone(),
-            ),
-            (
-                "EtherType".to_owned(),
-                self.header.ether_type.protocol_name.clone(),
-            ),
-        ])
+    fn append_summary(&self, target: &mut String) {
+        let _ = write!(
+            target,
+            "protocol: ethernet
+Source Mac: {}
+Destination Mac: {}
+EtherType: {}",
+            self.header.source_mac,
+            self.header.destination_mac,
+            self.header.ether_type.protocol_name,
+        );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
@@ -129,10 +105,6 @@ impl Layer for EthernetFrame {
         self.header.destination_mac.clone()
     }
 
-    fn box_clone(&self) -> Box<dyn Layer> {
-        Box::new(self.clone())
-    }
-
     fn info(&self) -> String {
         format!("next header {}", self.header.ether_type.protocol_name)
     }
@@ -148,13 +120,11 @@ impl Describable for EthernetFrame {
             Some(network_layer) => (network_layer.source(), network_layer.destination()),
         };
 
-        let layer: &dyn Layer = match self.payload.as_deref() {
-            Some(payload) => get_innermost_layer(payload),
-            None => self as &dyn Layer,
-        };
+        let layer: &dyn Layer = get_innermost_layer(self);
 
         Description {
             id: self.id,
+            id_string: self.id.to_string(),
             timestamp: self.timestamp.clone(),
             protocol: layer.protocol_type(),
             source: s_addy,
@@ -163,15 +133,18 @@ impl Describable for EthernetFrame {
         }
     }
 
-    fn get_long(&self) -> Vec<LinkedHashMap<String, String>> {
-        let mut vec_map = vec![self.get_summary()];
-        let mut current_layer: Option<&dyn Layer> = Some(self);
+    fn get_long(&self) -> String {
+        let mut ret = String::new();
+        self.append_summary(&mut ret);
+
+        let mut current_layer: Option<&dyn Layer> = self.payload.as_deref();
         while let Some(layer) = &current_layer {
-            vec_map.push(layer.get_summary());
+            ret.push_str("\n\n");
+            layer.append_summary(&mut ret);
             current_layer = layer.get_next();
         }
 
-        vec_map
+        ret
     }
 
     fn get_id(&self) -> i32 {
@@ -183,21 +156,7 @@ impl Describable for EthernetFrame {
     }
 }
 
-/*
-
-
-
-helper functions
-
-
-
- */
-
-//might be in another trait
-fn get_innermost_info(mut layer: &dyn Layer) -> (ProtocolType, String) {
-    layer = get_innermost_layer(layer);
-    (layer.protocol_type(), layer.info())
-}
+// helper functions
 
 fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
     while let Some(next) = layer.get_next() {
@@ -206,12 +165,11 @@ fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
     layer
 }
 
-fn set_name(proto: EtherType) -> String {
-    let name: String = match proto {
-        EtherTypes::Ipv4 => "IPv4".to_owned(),
-        EtherTypes::Arp => "ARP".to_owned(),
-        EtherTypes::Ipv6 => "IPv6".to_owned(),
-        _ => "Unknown".to_owned(),
-    };
-    name
+fn set_name(proto: EtherType) -> &'static str {
+    match proto {
+        EtherTypes::Ipv4 => "IPv4",
+        EtherTypes::Arp => "ARP",
+        EtherTypes::Ipv6 => "IPv6",
+        _ => "Unknown",
+    }
 }
