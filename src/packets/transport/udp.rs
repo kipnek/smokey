@@ -1,92 +1,63 @@
-use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::Packet;
-
-/*
-
-
-Udp Header
-
-
- */
+use std::fmt::Write;
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
     pub source_port: u16,
     pub destination_port: u16,
     pub length: u16,
     pub checksum: u16,
-    pub payload: Vec<u8>,
     pub malformed: bool,
 }
-
-impl UdpHeader {
-    fn malformed(payload: &[u8]) -> UdpHeader {
-        UdpHeader {
-            source_port: 0,
-            destination_port: 0,
-            length: 0,
-            checksum: 0,
-            payload: payload.to_vec(),
-            malformed: true,
-        }
-    }
-}
-
-/*
-
-
-UDP Packet
-
-
- */
 
 #[derive(Default, Debug, Clone)]
 pub struct UdpPacket {
     pub header: UdpHeader,
-    pub payload: Option<Box<dyn Layer>>,
+    pub payload: Vec<u8>,
+}
+
+impl UdpPacket {
+    pub fn new(packet: &[u8]) -> Option<UdpPacket> {
+        let packet = pnet::packet::udp::UdpPacket::new(packet)?;
+
+        let header = UdpHeader {
+            source_port: packet.get_source(),
+            destination_port: packet.get_destination(),
+            length: packet.get_length(),
+            checksum: packet.get_checksum(),
+            malformed: false,
+        };
+
+        Some(UdpPacket {
+            header,
+            payload: packet.payload().to_vec(),
+        })
+    }
 }
 
 impl Layer for UdpPacket {
-    fn deserialize(&mut self, packet: &[u8]) {
-        let packet_header = match pnet::packet::udp::UdpPacket::new(packet) {
-            None => UdpHeader::malformed(packet),
-            Some(header) => UdpHeader {
-                source_port: header.get_source(),
-                destination_port: header.get_destination(),
-                length: header.get_length(),
-                checksum: header.get_checksum(),
-                payload: header.payload().to_vec(),
-                malformed: false,
-            },
-        };
-        self.header = packet_header;
-        self.payload = None;
-    }
+    fn append_summary(&self, target: &mut String) {
+        let UdpHeader {
+            source_port,
+            destination_port,
+            length,
+            checksum,
+            malformed,
+        } = &self.header;
 
-    fn get_summary(&self) -> LinkedHashMap<String, String> {
-        LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_owned(), "udp".to_owned()),
-            (
-                "source_port".to_owned(),
-                self.header.source_port.to_string(),
-            ),
-            (
-                "destination_port".to_owned(),
-                self.header.destination_port.to_string(),
-            ),
-            ("length".to_owned(), self.header.length.to_string()),
-            ("checksum".to_owned(), self.header.checksum.to_string()),
-            ("malformed".to_owned(), self.header.malformed.to_string()),
-        ])
+        let _ = write!(
+            target,
+            "protocol: udp
+source_port: {source_port}
+destination_port: {destination_port}
+length: {length}
+checksum: {checksum}
+malformed: {malformed}"
+        );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
-        self.payload.as_deref()
-    }
-
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Udp
+        None
     }
 
     fn source(&self) -> String {
@@ -95,10 +66,6 @@ impl Layer for UdpPacket {
 
     fn destination(&self) -> String {
         self.header.destination_port.to_string()
-    }
-
-    fn box_clone(&self) -> Box<dyn Layer> {
-        Box::new(self.clone())
     }
 
     fn info(&self) -> String {

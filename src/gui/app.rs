@@ -1,20 +1,15 @@
-use crate::packets::shared_objs::Description;
 use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
-use crossbeam::channel::Receiver;
 use std::fmt;
-use std::fmt::Debug;
 
-use iced::widget::scrollable::Direction;
-use iced::widget::{
-    self, button, container, row, scrollable, text, Button, Column, Scrollable, Text,
-};
+use iced::widget::{self, button, container, scrollable, text, Text};
 use iced::{
-    executor, time, Alignment, Application, Command, Element, Length, Renderer, Subscription, Theme,
+    executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme,
 };
-use iced_table::{table, Table};
-use std::time::Duration;
+use iced_table::table;
 
+use crate::packets::data_link::ethernet::EthernetFrame;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -29,15 +24,37 @@ pub enum Message {
     SyncHeader(scrollable::AbsoluteOffset),
 }
 
-impl Application for LiveCapture {
+pub struct CaptureApp {
+    pub header: scrollable::Id,
+    pub footer: scrollable::Id,
+    pub body: scrollable::Id,
+    pub sniffer: LiveCapture,
+    pub selected: Option<i32>,
+    pub page: usize,
+}
+
+impl CaptureApp {
+    pub fn new() -> Self {
+        Self {
+            header: scrollable::Id::unique(),
+            footer: scrollable::Id::unique(),
+            body: scrollable::Id::unique(),
+            sniffer: Default::default(),
+            selected: None,
+            page: 0,
+        }
+    }
+}
+
+impl Application for CaptureApp {
     type Executor = executor::Default;
     type Message = Message;
     type Theme = Theme;
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
-        let app = LiveCapture::default();
-        (app, iced::Command::perform(async {}, |_| Message::Tick))
+        let app = CaptureApp::new();
+        (app, iced::Command::perform(async {}, |()| Message::Tick))
     }
 
     fn title(&self) -> String {
@@ -47,16 +64,18 @@ impl Application for LiveCapture {
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::Tick => {
-                if let Some(receiver) = self.receiver.as_mut() {
-                    fetch_data_from_channel(receiver, &mut self.captured_packets);
+                if let Some(receiver) = self.sniffer.receiver.as_mut() {
+                    self.sniffer.captured_packets.extend(receiver.try_iter());
                 }
             }
-            Message::Start => self.capture(),
-            Message::Stop => self.stop(),
+            Message::Start => self.sniffer.capture(),
+            Message::Stop => self.sniffer.stop(),
             Message::NextPage => {
-                if self.page < self.captured_packets.len() - 1 {
+                //if let Ok(lock) = self.captured_packets.lock(){
+                if (self.page + 1) * 1000 < self.sniffer.captured_packets.len() {
                     self.page += 1;
                 }
+                //}
             }
             Message::PreviousPage => {
                 if self.page > 0 {
@@ -78,76 +97,57 @@ impl Application for LiveCapture {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-
         let desc_columns: Vec<DescriptionColumn> = vec![
-            DescriptionColumn::new(DescriptionTable::Id),
-            DescriptionColumn::new(DescriptionTable::Timestamp),
-            DescriptionColumn::new(DescriptionTable::Source),
-            DescriptionColumn::new(DescriptionTable::Destination),
-            DescriptionColumn::new(DescriptionTable::Info),
-            DescriptionColumn::new(DescriptionTable::Details),
+            DescriptionColumn::new(DescriptionTable::Id, 100.0),
+            DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
+            DescriptionColumn::new(DescriptionTable::Source, 200.0),
+            DescriptionColumn::new(DescriptionTable::Destination, 200.0),
+            DescriptionColumn::new(DescriptionTable::Info, 350.0),
+            DescriptionColumn::new(DescriptionTable::Details, 100.0),
         ];
 
-        let mut column = Column::with_children(vec![
-            button("Start").on_press(Message::Start).into(),
-            button("Stop").on_press(Message::Stop).into(),
-            {
-                let prev_disabled = self.page == 0;
+        let page_button = |text, enable_press, message| {
+            let button = button(text);
+            if enable_press {
+                button.on_press(message)
+            } else {
+                button
+            }
+        };
 
-                let button = Button::new("Previous");
-                if !prev_disabled {
-                    button.on_press(Message::PreviousPage)
-                } else {
-                    button
-                }
-                .into()
-            },
-            {
-                let next_disabled = self.page + 1 >= self.captured_packets.len();
-
-                let button = Button::new("Next");
-                if !next_disabled {
-                    button.on_press(Message::NextPage)
-                } else {
-                    button
-                }
-                .into()
-            },
-        ])
+        let mut column = widget::column!(
+            button("Start").on_press(Message::Start),
+            button("Stop").on_press(Message::Stop),
+            page_button("Previous", self.page != 0, Message::PreviousPage),
+            page_button(
+                "Next",
+                (self.page + 1) * 1000 < self.sniffer.captured_packets.len(),
+                Message::NextPage
+            ),
+        )
         .spacing(10);
 
-        if let Some(data) = self.captured_packets.get(self.page) {
-            /*for item in data.iter() {
-                column = column.push(Text::new(item.get_short().info));
-            }*/
-            let mut table:Table<'_, DescriptionColumn, Box<dyn Describable>, Message, Renderer> = table(
-                self.header.clone(),
-                self.body.clone(),
-                &desc_columns,
-                data.as_slice(),
-                Message::SyncHeader,
-            );
-            /*
-            let scroll_children = { data.iter() }
-                .map(|frame| frame.get_description().view())
-                .collect();
-
-            let scroll = scrollable(widget::column(scroll_children).padding(13).spacing(5))
-                .height(Length::Fill)
-                .width(Length::Fill);*/
-
-            column = column.push(table);
+        if let Some(data) = self.sniffer.captured_packets.chunks(1000).nth(self.page) {
+            let table = iced::widget::responsive(move |size| {
+                iced_table::table(
+                    self.header.clone(),
+                    self.body.clone(),
+                    &desc_columns,
+                    data,
+                    Message::SyncHeader,
+                )
+                .min_width(size.width)
+                .into()
+            });
+            column = column.push(table)
         }
 
-        if let Some(frame) = { self.selected }
-            .and_then(|selected_id| get_describable(&self.captured_packets, selected_id))
-        {
-            let children = { frame.get_long().iter().flatten() }
-                .map(|(key, value)| Text::new(format!("{}: {}", key, value)).into())
-                .collect();
-            let scroll = scrollable(Column::with_children(children).padding(13).spacing(5))
-                .height(Length::Fill);
-            column = column.push(scroll);
+        if let Some(frame) = { self.selected }.and_then(|selected_id| {
+            { self.sniffer.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
+        }) {
+            let text = Text::new(frame.get_long());
+            let content = widget::column!(text).padding(13).spacing(5);
+            column = column.push(scrollable(content).height(Length::Fill));
         }
 
         column.into()
@@ -166,83 +166,6 @@ impl Application for LiveCapture {
     }
 }
 
-impl Description {
-    pub fn view(&self) -> Element<Message> {
-        row![
-            Text::new(self.id.to_string()).width(Length::FillPortion(90)),
-            Text::new(&self.timestamp).width(Length::FillPortion(250)),
-            Text::new(&self.source).width(Length::FillPortion(230)),
-            Text::new(&self.destination).width(Length::FillPortion(230)),
-            Text::new(&self.info).width(Length::FillPortion(250)),
-            button(Text::new("Details")).on_press(Message::FrameSelected(self.id))
-        ]
-        .align_items(Alignment::Start)
-        .width(Length::Fill)
-        .height(50.00)
-        .into()
-    }
-}
-/*
-
-helper functions
-
- */
-
-fn flatten_descriptions(descriptions: Vec<&Description>) -> Vec<String> {
-    { descriptions.into_iter() }
-        .flat_map(|desc| {
-            [
-                desc.id.to_string(),
-                desc.timestamp.clone(),
-                desc.protocol.to_string(),
-                desc.source.clone(),
-                desc.destination.clone(),
-                desc.info.clone(),
-            ]
-        })
-        .collect()
-}
-
-fn get_describable(
-    vectors: &[Vec<Box<dyn Describable>>],
-    id_to_find: i32,
-) -> Option<&dyn Describable> {
-    { vectors.iter().flatten() }
-        .find_map(|frame| (frame.get_id() == id_to_find).then_some(&**frame))
-}
-
-fn append_describables(
-    main_vector: &mut Vec<Vec<Box<dyn Describable>>>,
-    mut describables: Vec<Box<dyn Describable>>,
-) {
-    if main_vector.is_empty() || main_vector.last().unwrap().len() == 1000 {
-        main_vector.push(Vec::with_capacity(1000));
-    }
-
-    let last_vector = main_vector.last_mut().unwrap();
-    let items_to_append = describables.len().min(1000 - last_vector.len());
-    last_vector.extend(describables.drain(0..items_to_append));
-
-    while !describables.is_empty() {
-        let mut new_vec = Vec::with_capacity(1000);
-        new_vec.extend(describables.drain(0..describables.len().min(1000)));
-        main_vector.push(new_vec);
-    }
-}
-
-fn fetch_data_from_channel(
-    receiver: &mut Receiver<Box<dyn Describable>>,
-    packets: &mut Vec<Vec<Box<dyn Describable>>>,
-) {
-    if packets.is_empty() || packets.last().unwrap().len() == 1000 {
-        packets.push(Vec::with_capacity(1000));
-    }
-
-    let last_vector = packets.last_mut().unwrap();
-    let limit = 100.min(1000 - last_vector.len());
-    last_vector.extend(receiver.try_iter().take(limit));
-}
-
 struct DescriptionColumn {
     field: DescriptionTable,
     width: f32,
@@ -250,10 +173,10 @@ struct DescriptionColumn {
 }
 
 impl DescriptionColumn {
-    fn new(dt: DescriptionTable) -> Self {
+    fn new(dt: DescriptionTable, width: f32) -> Self {
         Self {
             field: dt,
-            width: 100.0,
+            width,
             resize_offset: None,
         }
     }
@@ -286,7 +209,7 @@ impl fmt::Display for DescriptionTable {
 }
 
 impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
-    type Row = Box<dyn Describable>;
+    type Row = EthernetFrame;
 
     fn header(&'b self, col_index: usize) -> Element<'a, Message, Renderer> {
         container(text(format!("{}", self.field)))
@@ -325,24 +248,6 @@ impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
 }
 
 /*
-async fn fetch_data_from_channel(receiver: Receiver<Box<dyn Describable>>, packets: Arc<Mutex<Vec<Vec<Box<dyn Describable>>>>>) {
-    loop {
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        let mut batch = Vec::with_capacity(100);
-        for _ in 0..100 {
-            match receiver.try_recv() {
-                Ok(data) => batch.push(data),
-                Err(_) => break,
-            }
-        }
-        if let Ok(mut lock) = packets.lock() {
-            append_describables(&mut lock, batch);
-        }
-    }
-}
-*/
-
-/*
 //this is just boilerplate for the cache
 use iced::{Cache, Column, Text};
 
@@ -351,5 +256,4 @@ let mut cache = Cache::new();
 let ui = cache.draw(|| {
     Column::new().push(Text::new("This layout is cached!"))
 });
-
  */

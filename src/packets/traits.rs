@@ -1,48 +1,30 @@
-use crate::packets::shared_objs::{Description, ExtendedType, ProtocolDescriptor, ProtocolType};
-use linked_hash_map::LinkedHashMap;
+use crate::packets::shared_objs::Description;
 
 use std::fmt::Debug;
 
 pub trait Layer: Send + Sync + Debug {
-    fn deserialize(&mut self, packet: &[u8]);
-
-    fn get_summary(&self) -> LinkedHashMap<String, String>;
+    fn append_summary(&self, target: &mut String);
 
     fn get_next(&self) -> Option<&dyn Layer>;
 
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Unknown // or a suitable default
-    }
-
     fn source(&self) -> String;
     fn destination(&self) -> String;
-
-    fn box_clone(&self) -> Box<dyn Layer>;
 
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_owned()
     }
 }
 
-impl Clone for Box<dyn Layer> {
-    fn clone(&self) -> Self {
-        self.box_clone()
-    }
-}
-
 pub trait Describable: Send + Sync + Debug + Layer {
     fn get_short(&self) -> Description;
 
-    fn get_long(&self) -> Vec<LinkedHashMap<String, String>>;
+    fn get_long(&self) -> String;
 
     fn get_id(&self) -> i32;
 
     fn get_description(&self) -> &Description;
 }
 
-pub trait SetProtocolDescriptor<T>: Send + Debug {
-    fn set_proto_descriptor(proto: ExtendedType<T>) -> ProtocolDescriptor<ExtendedType<T>>;
-}
 /*
 If you want to filter or search packets based on specific criteria like port or
 address, you would generally implement accessor methods in the Layer trait and

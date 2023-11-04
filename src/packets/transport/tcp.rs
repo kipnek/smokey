@@ -1,15 +1,6 @@
-use crate::packets::shared_objs::ProtocolType;
 use crate::packets::traits::Layer;
-use linked_hash_map::LinkedHashMap;
 use pnet::packet::Packet;
-
-/*
-
-
-TCP header
-
-
- */
+use std::fmt::Write;
 
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
@@ -22,8 +13,6 @@ pub struct TcpHeader {
     pub checksum: u16,
     pub urgent_pointer: u16,
     pub flags: TcpFlags,
-    pub payload: Vec<u8>,
-    pub malformed: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -39,116 +28,84 @@ pub struct TcpFlags {
 impl TcpHeader {
     fn set_tcp_flags(flags_byte: u8) -> TcpFlags {
         TcpFlags {
-            urg: (flags_byte & 0b100000) != 0,
-            ack: (flags_byte & 0b010000) != 0,
-            psh: (flags_byte & 0b001000) != 0,
-            rst: (flags_byte & 0b000100) != 0,
-            syn: (flags_byte & 0b000010) != 0,
-            fin: (flags_byte & 0b000001) != 0,
-        }
-    }
-
-    fn malformed(payload: &[u8]) -> TcpHeader {
-        TcpHeader {
-            source_port: 0,
-            destination_port: 0,
-            sequence_number: 0,
-            acknowledgment_number: 0,
-            data_offset_reserved_flags: 0,
-            window_size: 0,
-            checksum: 0,
-            urgent_pointer: 0,
-            flags: Default::default(),
-            payload: payload.to_vec(),
-            malformed: false,
+            urg: (flags_byte & 0b10_0000) != 0,
+            ack: (flags_byte & 0b01_0000) != 0,
+            psh: (flags_byte & 0b00_1000) != 0,
+            rst: (flags_byte & 0b00_0100) != 0,
+            syn: (flags_byte & 0b00_0010) != 0,
+            fin: (flags_byte & 0b00_0001) != 0,
         }
     }
 }
-
-/*
-
-
-TCP Packet
-
-
- */
 
 #[derive(Default, Debug, Clone)]
 pub struct TcpPacket {
     pub header: TcpHeader,
-    pub payload: Option<Box<dyn Layer>>,
+    pub payload: Vec<u8>,
+}
+
+impl TcpPacket {
+    pub fn new(packet: &[u8]) -> Option<TcpPacket> {
+        let packet = pnet::packet::tcp::TcpPacket::new(packet)?;
+
+        let header = TcpHeader {
+            source_port: packet.get_source(),
+            destination_port: packet.get_destination(),
+            sequence_number: packet.get_sequence(),
+            acknowledgment_number: packet.get_acknowledgement(),
+            data_offset_reserved_flags: packet.get_data_offset(),
+            window_size: packet.get_window(),
+            checksum: packet.get_checksum(),
+            urgent_pointer: packet.get_urgent_ptr(),
+            flags: TcpHeader::set_tcp_flags(packet.get_flags()),
+        };
+
+        Some(TcpPacket {
+            header,
+            payload: packet.payload().to_vec(),
+        })
+    }
 }
 
 impl Layer for TcpPacket {
-    fn deserialize(&mut self, packet: &[u8]) {
-        let header = match pnet::packet::tcp::TcpPacket::new(packet) {
-            None => TcpHeader::malformed(packet),
-            Some(header) => TcpHeader {
-                source_port: header.get_source(),
-                destination_port: header.get_destination(),
-                sequence_number: header.get_sequence(),
-                acknowledgment_number: header.get_acknowledgement(),
-                data_offset_reserved_flags: header.get_data_offset(),
-                window_size: header.get_window(),
-                checksum: header.get_checksum(),
-                urgent_pointer: header.get_urgent_ptr(),
-                flags: TcpHeader::set_tcp_flags(header.get_flags()),
-                payload: header.payload().to_vec(),
-                malformed: false,
-            },
-        };
-        self.header = header;
-        self.payload = None;
-    }
+    fn append_summary(&self, target: &mut String) {
+        let TcpHeader {
+            source_port,
+            destination_port,
+            sequence_number: _,
+            acknowledgment_number,
+            data_offset_reserved_flags,
+            window_size,
+            checksum,
+            urgent_pointer,
+            flags:
+                TcpFlags {
+                    urg,
+                    ack,
+                    psh,
+                    rst,
+                    syn,
+                    fin,
+                },
+        } = &self.header;
+        let [urg, ack, psh, rst, syn, fin] = [*urg, *ack, *psh, *rst, *syn, *fin].map(u8::from);
 
-    fn get_summary(&self) -> LinkedHashMap<String, String> {
-        LinkedHashMap::<String, String>::from_iter([
-            ("protocol".to_owned(), "tcp".to_owned()),
-            (
-                "source_port".to_owned(),
-                self.header.source_port.to_string(),
-            ),
-            (
-                "destination_port".to_owned(),
-                self.header.destination_port.to_string(),
-            ),
-            (
-                "acknowledgment_number".to_owned(),
-                self.header.acknowledgment_number.to_string(),
-            ),
-            (
-                "data_offset_reserved_flags".to_owned(),
-                self.header.data_offset_reserved_flags.to_string(),
-            ),
-            (
-                "window_size".to_owned(),
-                self.header.window_size.to_string(),
-            ),
-            ("checksum".to_owned(), self.header.checksum.to_string()),
-            (
-                "urgent_pointer".to_owned(),
-                self.header.urgent_pointer.to_string(),
-            ),
-            (
-                "flags".to_owned(),
-                format!(
-                    "ack : {}, psh : {}, rst : {}, syn : {}, fin : {}",
-                    self.header.flags.ack as u8,
-                    self.header.flags.psh as u8,
-                    self.header.flags.rst as u8,
-                    self.header.flags.syn as u8,
-                    self.header.flags.fin as u8,
-                ),
-            ),
-            ("malformed".to_owned(), self.header.malformed.to_string()),
-        ])
+        let _ = write!(
+            target,
+            "protocol: tcp,
+source_port: {source_port}
+destination_port: {destination_port}
+acknowledgment_number: {acknowledgment_number}
+data_offset_reserved_flags: {data_offset_reserved_flags}
+window_size: {window_size}
+checksum: {checksum}
+urgent_pointer: {urgent_pointer}
+flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}"
+        );
     }
 
     fn get_next(&self) -> Option<&dyn Layer> {
-        self.payload.as_deref()
-    }
-    fn protocol_type(&self) -> ProtocolType {
-        ProtocolType::Tcp
+        None
     }
 
     fn source(&self) -> String {
@@ -157,10 +114,6 @@ impl Layer for TcpPacket {
 
     fn destination(&self) -> String {
         self.header.destination_port.to_string()
-    }
-
-    fn box_clone(&self) -> Box<dyn Layer> {
-        Box::new(self.clone())
     }
 
     fn info(&self) -> String {

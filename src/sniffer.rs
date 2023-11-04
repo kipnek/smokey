@@ -1,24 +1,21 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::traits::Describable;
-use crossbeam::channel::Receiver;
-use pcap::{Device, Linktype};
-use std::thread;
 use iced::widget::scrollable;
+use pcap::{Device, Linktype};
+use std::sync::mpsc::{self, Receiver};
+use std::thread;
 
+#[derive(Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
     pub page: usize,
     pub selected: Option<i32>,
-    pub receiver: Option<Receiver<Box<dyn Describable>>>,
-    pub captured_packets: Vec<Vec<Box<dyn Describable>>>,
-    pub header: scrollable::Id,
-    pub footer: scrollable::Id,
-    pub body: scrollable::Id,
+    pub receiver: Option<Receiver<EthernetFrame>>,
+    pub captured_packets: Vec<EthernetFrame>,
 }
 
 impl LiveCapture {
     pub fn capture(&mut self) {
-        let (sender, receiver) = crossbeam::channel::unbounded();
+        let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
 
         thread::spawn(move || {
@@ -37,7 +34,10 @@ impl LiveCapture {
             let Linktype(_cap_type) = cap.get_datalink();
 
             while let Ok(packet) = cap.next_packet() {
-                let result = sender.send(Box::new(EthernetFrame::new(index, packet.data)));
+                let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
+                    continue;
+                };
+                let result = sender.send(eth_frame);
                 if result.is_err() {
                     // receiver was dropped
                     break;
@@ -54,24 +54,11 @@ impl LiveCapture {
     }
 }
 
-impl Default for LiveCapture {
-    fn default() -> Self {
-        LiveCapture {
-            interfaces: vec![],
-            page: 0,
-            selected: None,
-            receiver: None,
-            captured_packets: vec![Vec::with_capacity(1000)],
+/*
+
             header: scrollable::Id::unique(),
             footer: scrollable::Id::unique(),
             body: scrollable::Id::unique(),
-        }
-    }
-}
-
-/*
-
-
 
 the different types from datatype to ensure it only parses legit ethernet etc..
 
