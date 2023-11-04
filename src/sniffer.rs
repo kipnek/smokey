@@ -1,4 +1,5 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
+use iced::widget::scrollable;
 use pcap::{Device, Linktype};
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
@@ -6,8 +7,6 @@ use std::thread;
 #[derive(Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
-    pub page: usize,
-    pub selected: Option<i32>,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
 }
@@ -55,7 +54,9 @@ impl LiveCapture {
 
 /*
 
-
+            header: scrollable::Id::unique(),
+            footer: scrollable::Id::unique(),
+            body: scrollable::Id::unique(),
 
 the different types from datatype to ensure it only parses legit ethernet etc..
 
