@@ -7,8 +7,6 @@ use std::thread;
 #[derive(Default)]
 pub struct LiveCapture {
     pub interfaces: Vec<String>,
-    pub page: usize,
-    pub selected: Option<i32>,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
 }
