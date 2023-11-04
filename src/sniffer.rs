@@ -1,12 +1,16 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
+use crate::packets::shared_objs::Interface;
 use iced::widget::scrollable;
-use pcap::{Device, Linktype};
+use iced::Error;
+use pcap::{ConnectionStatus, Device, DeviceFlags, IfFlags, Linktype};
+use pnet::datalink::interfaces;
+use std::net::IpAddr;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
 #[derive(Default)]
 pub struct LiveCapture {
-    pub interfaces: Vec<String>,
+    pub interface: String,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
 }
@@ -29,7 +33,7 @@ impl LiveCapture {
                 .open()
                 .unwrap();
             //use when more types are captured
-            let Linktype(_cap_type) = cap.get_datalink();
+            //let Linktype(_cap_type) = cap.get_datalink();
 
             while let Ok(packet) = cap.next_packet() {
                 let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
@@ -41,8 +45,6 @@ impl LiveCapture {
                     break;
                 }
                 index += 1;
-
-                //makes sure it is an ethernet capture as opposed to wifi
             }
         });
     }
@@ -50,13 +52,24 @@ impl LiveCapture {
     pub fn stop(&mut self) {
         self.receiver = None;
     }
+
+    pub fn get_interfaces() -> Result<Vec<Interface>, Error> {
+        let interface_list: Vec<Interface> = pcap::Device::list()
+            .expect("No devices")
+            .into_iter()
+            .map(|interface| Interface {
+                name: interface.name,
+                desc: interface.desc,
+                addr: interface.addresses.iter().map(|x| x.addr).collect(),
+                status: interface.flags.connection_status,
+            })
+            .collect();
+
+        Ok(interface_list)
+    }
 }
 
 /*
-
-            header: scrollable::Id::unique(),
-            footer: scrollable::Id::unique(),
-            body: scrollable::Id::unique(),
 
 the different types from datatype to ensure it only parses legit ethernet etc..
 

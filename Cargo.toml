@@ -18,7 +18,7 @@ chrono = "0.4.28"
 # libwifi    = "0.3.1"
 # ieee80211       = { git = "https://github.com/SpiralP/rust-ieee80211.git", branch = "master" }
 # linked-hash-map = "0.5"
-iced = { version = "0.10.0", features = ["tokio", "lazy"] }
+iced = { version = "0.10.0", features = ["tokio", "lazy", "advanced"] }
 iced_table = "0.1.0"
 # crossbeam = "0.8.2"
 # tokio = { version = "1", features = ["full"] }
