@@ -2,14 +2,14 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use std::fmt;
 
-use iced::widget::{self, button, container, scrollable, text, Text};
-use iced::{
-    executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme,
-};
+use iced::widget::{self, button, container, row, scrollable, text, Column, Text};
+use iced::{executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme};
 use iced_table::table;
 
+use crate::gui::modal::Modal;
 use crate::packets::data_link::ethernet::EthernetFrame;
 use std::time::Duration;
+use pcap::Device;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -19,7 +19,8 @@ pub enum Message {
     NextPage,
     PreviousPage,
     FrameSelected(i32),
-    //DataReceived(Vec<Box<dyn Describable>>)
+    DeviceSelected(Device),
+    ToggleModal,
     NoOp,
     SyncHeader(scrollable::AbsoluteOffset),
 }
@@ -29,8 +30,11 @@ pub struct CaptureApp {
     pub footer: scrollable::Id,
     pub body: scrollable::Id,
     pub sniffer: LiveCapture,
+    pub show_dev_modal: bool,
+    pub running: bool,
     pub selected: Option<i32>,
     pub page: usize,
+    pub per_page: usize,
 }
 
 impl CaptureApp {
@@ -40,8 +44,11 @@ impl CaptureApp {
             footer: scrollable::Id::unique(),
             body: scrollable::Id::unique(),
             sniffer: Default::default(),
+            running: false,
+            show_dev_modal: false,
             selected: None,
             page: 0,
+            per_page: 500,
         }
     }
 }
@@ -68,14 +75,18 @@ impl Application for CaptureApp {
                     self.sniffer.captured_packets.extend(receiver.try_iter());
                 }
             }
-            Message::Start => self.sniffer.capture(),
-            Message::Stop => self.sniffer.stop(),
+            Message::Start => {
+                self.running = true;
+                self.sniffer.capture();
+            }
+            Message::Stop => {
+                self.running = false;
+                self.sniffer.stop();
+            }
             Message::NextPage => {
-                //if let Ok(lock) = self.captured_packets.lock(){
-                if (self.page + 1) * 1000 < self.sniffer.captured_packets.len() {
+                if (self.page + 1) * self.per_page < self.sniffer.captured_packets.len() {
                     self.page += 1;
                 }
-                //}
             }
             Message::PreviousPage => {
                 if self.page > 0 {
@@ -92,20 +103,16 @@ impl Application for CaptureApp {
                     scrollable::scroll_to(self.footer.clone(), offset),
                 ])
             }
+            Message::DeviceSelected(interface) => {
+                self.sniffer.interface = Some(interface);
+                self.show_dev_modal = !self.show_dev_modal
+            }
+            Message::ToggleModal => self.show_dev_modal = !self.show_dev_modal,
         };
         Command::none()
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let desc_columns: Vec<DescriptionColumn> = vec![
-            DescriptionColumn::new(DescriptionTable::Id, 100.0),
-            DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
-            DescriptionColumn::new(DescriptionTable::Source, 200.0),
-            DescriptionColumn::new(DescriptionTable::Destination, 200.0),
-            DescriptionColumn::new(DescriptionTable::Info, 350.0),
-            DescriptionColumn::new(DescriptionTable::Details, 100.0),
-        ];
-
         let page_button = |text, enable_press, message| {
             let button = button(text);
             if enable_press {
@@ -115,19 +122,35 @@ impl Application for CaptureApp {
             }
         };
 
-        let mut column = widget::column!(
-            button("Start").on_press(Message::Start),
-            button("Stop").on_press(Message::Stop),
+        let button_row = row![
+            page_button("Start", !self.running && self.sniffer.interface.is_some(), Message::Start),
+            page_button("Stop", self.running, Message::Stop),
             page_button("Previous", self.page != 0, Message::PreviousPage),
             page_button(
                 "Next",
-                (self.page + 1) * 1000 < self.sniffer.captured_packets.len(),
+                (self.page + 1) * self.per_page < self.sniffer.captured_packets.len(),
                 Message::NextPage
             ),
-        )
-        .spacing(10);
+            page_button("Pick Device", !self.running, Message::ToggleModal),
+        ]
+        .spacing(25);
 
-        if let Some(data) = self.sniffer.captured_packets.chunks(1000).nth(self.page) {
+        let mut column = widget::column!(button_row).spacing(10);
+
+        if let Some(data) = self
+            .sniffer
+            .captured_packets
+            .chunks(self.per_page)
+            .nth(self.page)
+        {
+            let desc_columns: Vec<DescriptionColumn> = vec![
+                DescriptionColumn::new(DescriptionTable::Id, 100.0),
+                DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
+                DescriptionColumn::new(DescriptionTable::Source, 200.0),
+                DescriptionColumn::new(DescriptionTable::Destination, 200.0),
+                DescriptionColumn::new(DescriptionTable::Info, 350.0),
+                DescriptionColumn::new(DescriptionTable::Details, 100.0),
+            ];
             let table = iced::widget::responsive(move |size| {
                 iced_table::table(
                     self.header.clone(),
@@ -140,6 +163,19 @@ impl Application for CaptureApp {
                 .into()
             });
             column = column.push(table)
+        } else {
+            let device = if let Some(interface) = &self.sniffer.interface{
+                interface.name.clone()
+            }else{
+              "None".to_string()
+            };
+            column = column.push(
+                row!(
+                    text(format!("Selected Device: {:?}", device)),
+                )
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+            )
         }
 
         if let Some(frame) = { self.selected }.and_then(|selected_id| {
@@ -147,10 +183,45 @@ impl Application for CaptureApp {
         }) {
             let text = Text::new(frame.get_long());
             let content = widget::column!(text).padding(13).spacing(5);
-            column = column.push(scrollable(content).height(Length::Fill));
+            column = column.push(scrollable(content).height(Length::Fill).width(Length::Fill));
         }
 
-        column.into()
+        if self.show_dev_modal {
+            let interfaces = match LiveCapture::get_interfaces() {
+                Ok(interfaces) => interfaces,
+                Err(_) => vec![], // Handle the error appropriately
+            };
+
+            let interface_buttons: Vec<Element<_>> = interfaces
+                .iter()
+                .map(|interface| {
+                    button(Text::new(format!(
+                        "{} {:?}",
+                        interface.name, interface.addresses
+                    )))
+                    .on_press(Message::DeviceSelected(interface.clone()))
+                    .into()
+                })
+                .collect();
+
+            // Then create the scrollable content
+            let scrollable_content: Element<_> = interface_buttons
+                .into_iter()
+                .fold(Column::new().spacing(10), |column, button| {
+                    column.push(button)
+                })
+                .into();
+
+            let scrollable_modal = scrollable(scrollable_content)
+                .width(Length::Fill)
+                .height(Length::Fill);
+            let s_container = container(scrollable_modal).width(300).padding(10);
+            Modal::new(column, s_container)
+                .on_blur(Message::ToggleModal)
+                .into()
+        } else {
+            column.into()
+        }
     }
 
     /*fn theme(&self) -> Self::Theme {
@@ -211,7 +282,7 @@ impl fmt::Display for DescriptionTable {
 impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
     type Row = EthernetFrame;
 
-    fn header(&'b self, col_index: usize) -> Element<'a, Message, Renderer> {
+    fn header(&'b self, _col_index: usize) -> Element<'a, Message, Renderer> {
         container(text(format!("{}", self.field)))
             .height(24)
             .center_y()
@@ -220,8 +291,8 @@ impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
 
     fn cell(
         &'b self,
-        col_index: usize,
-        row_index: usize,
+        _col_index: usize,
+        _row_index: usize,
         row: &'b Self::Row,
     ) -> Element<'a, Message, Renderer> {
         let row = row.get_description();
@@ -235,7 +306,7 @@ impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
                 .on_press(Message::FrameSelected(row.id))
                 .into(),
         };
-        container(cell_content).height(24).center_y().into()
+        container(cell_content).height(30).center_y().into()
     }
 
     fn width(&self) -> f32 {

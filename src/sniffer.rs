@@ -1,12 +1,12 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
-use iced::widget::scrollable;
-use pcap::{Device, Linktype};
+use iced::Error;
+use pcap::Device;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
 #[derive(Default)]
 pub struct LiveCapture {
-    pub interfaces: Vec<String>,
+    pub interface: Option<Device>,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
 }
@@ -15,34 +15,34 @@ impl LiveCapture {
     pub fn capture(&mut self) {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
-
+        let interface = self.interface.clone();
         thread::spawn(move || {
             let mut index = 0;
 
             //only for development
-            let device = Device::lookup().unwrap().expect("Device Lookup failed");
+            //let device = Device::lookup().unwrap().expect("Device Lookup failed");
 
-            let mut cap = pcap::Capture::from_device(device)
-                .unwrap()
-                .immediate_mode(true)
-                .promisc(true)
-                .open()
-                .unwrap();
-            //use when more types are captured
-            let Linktype(_cap_type) = cap.get_datalink();
+            if let Some(int) = interface {
+                let mut cap = pcap::Capture::from_device(int)
+                    .unwrap()
+                    .immediate_mode(true)
+                    .promisc(true)
+                    .open()
+                    .unwrap();
+                //use when more types are captured
+                //let Linktype(_cap_type) = cap.get_datalink();
 
-            while let Ok(packet) = cap.next_packet() {
-                let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
-                    continue;
-                };
-                let result = sender.send(eth_frame);
-                if result.is_err() {
-                    // receiver was dropped
-                    break;
+                while let Ok(packet) = cap.next_packet() {
+                    let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
+                        continue;
+                    };
+                    let result = sender.send(eth_frame);
+                    if result.is_err() {
+                        // receiver was dropped
+                        break;
+                    }
+                    index += 1;
                 }
-                index += 1;
-
-                //makes sure it is an ethernet capture as opposed to wifi
             }
         });
     }
@@ -50,13 +50,14 @@ impl LiveCapture {
     pub fn stop(&mut self) {
         self.receiver = None;
     }
+
+    pub fn get_interfaces() -> Result<Vec<Device>, Error> {
+        let devices = pcap::Device::list().expect("no devices");
+        Ok(devices)
+    }
 }
 
 /*
-
-            header: scrollable::Id::unique(),
-            footer: scrollable::Id::unique(),
-            body: scrollable::Id::unique(),
 
 the different types from datatype to ensure it only parses legit ethernet etc..
 
