@@ -1,6 +1,6 @@
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
     pub source_port: u16,
@@ -60,12 +60,12 @@ malformed: {malformed}"
         None
     }
 
-    fn source(&self) -> String {
-        self.header.source_port.to_string()
+    fn source(&self) -> &dyn Display {
+        &self.header.source_port
     }
 
-    fn destination(&self) -> String {
-        self.header.destination_port.to_string()
+    fn destination(&self) -> &dyn Display {
+        &self.header.destination_port
     }
 
     fn info(&self) -> String {

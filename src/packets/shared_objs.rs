@@ -1,14 +1,11 @@
-use pcap::ConnectionStatus;
-use std::net::IpAddr;
+use crate::packets::traits::Layer;
 
-#[derive(Debug, Clone, Default)]
-pub struct Description {
+#[derive(Debug, Clone)]
+pub struct Description<'a> {
     pub id: i32,
-    pub id_string: String,
-    pub timestamp: String,
-    pub source: String,
-    pub destination: String,
-    pub info: String,
+    pub timestamp: &'a str,
+    pub src_dest_layer: &'a dyn Layer,
+    pub info_layer: &'a dyn Layer,
 }
 
 /*

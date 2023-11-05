@@ -5,7 +5,7 @@ use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
 };
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone)]
 pub struct Ipv4Header {
@@ -183,12 +183,12 @@ options: {options_string}"
         self.payload.as_deref()
     }
 
-    fn source(&self) -> String {
-        self.header.source_address.clone()
+    fn source(&self) -> &dyn Display {
+        &self.header.source_address
     }
 
-    fn destination(&self) -> String {
-        self.header.destination_address.clone()
+    fn destination(&self) -> &dyn Display {
+        &self.header.destination_address
     }
 
     fn info(&self) -> String {
