@@ -1,10 +1,6 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::shared_objs::Interface;
-use iced::widget::scrollable;
 use iced::Error;
-use pcap::{ConnectionStatus, Device, DeviceFlags, IfFlags, Linktype};
-use pnet::datalink::interfaces;
-use std::net::IpAddr;
+use pcap::Device;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 

@@ -113,15 +113,6 @@ impl Application for CaptureApp {
     }
 
     fn view(&self) -> Element<'_, Self::Message, Renderer<Self::Theme>> {
-        let desc_columns: Vec<DescriptionColumn> = vec![
-            DescriptionColumn::new(DescriptionTable::Id, 100.0),
-            DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
-            DescriptionColumn::new(DescriptionTable::Source, 200.0),
-            DescriptionColumn::new(DescriptionTable::Destination, 200.0),
-            DescriptionColumn::new(DescriptionTable::Info, 350.0),
-            DescriptionColumn::new(DescriptionTable::Details, 100.0),
-        ];
-
         let page_button = |text, enable_press, message| {
             let button = button(text);
             if enable_press {
@@ -152,6 +143,14 @@ impl Application for CaptureApp {
             .chunks(self.per_page)
             .nth(self.page)
         {
+            let desc_columns: Vec<DescriptionColumn> = vec![
+                DescriptionColumn::new(DescriptionTable::Id, 100.0),
+                DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
+                DescriptionColumn::new(DescriptionTable::Source, 200.0),
+                DescriptionColumn::new(DescriptionTable::Destination, 200.0),
+                DescriptionColumn::new(DescriptionTable::Info, 350.0),
+                DescriptionColumn::new(DescriptionTable::Details, 100.0),
+            ];
             let table = iced::widget::responsive(move |size| {
                 iced_table::table(
                     self.header.clone(),
@@ -184,7 +183,7 @@ impl Application for CaptureApp {
         }) {
             let text = Text::new(frame.get_long());
             let content = widget::column!(text).padding(13).spacing(5);
-            column = column.push(scrollable(content).height(Length::Fill));
+            column = column.push(scrollable(content).height(Length::Fill).width(Length::Fill));
         }
 
         if self.show_dev_modal {
