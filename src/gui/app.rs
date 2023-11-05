@@ -8,7 +8,6 @@ use iced_table::table;
 
 use crate::gui::modal::Modal;
 use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::shared_objs::Interface;
 use std::time::Duration;
 use pcap::Device;
 

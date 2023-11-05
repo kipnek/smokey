@@ -10,13 +10,6 @@ pub struct Description {
     pub destination: String,
     pub info: String,
 }
-#[derive(Debug, Clone)]
-pub struct Interface {
-    pub name: String,
-    pub desc: Option<String>,
-    pub addr: Vec<IpAddr>,
-    pub status: ConnectionStatus,
-}
 
 /*
        Device{
