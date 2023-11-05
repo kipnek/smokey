@@ -6,9 +6,7 @@ use iced::advanced::{self, Clipboard, Shell};
 use iced::alignment::Alignment;
 use iced::event;
 use iced::mouse;
-use iced::{
-    BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size,
-};
+use iced::{BorderRadius, Color, Element, Event, Length, Point, Rectangle, Size};
 
 /// A widget that centers a modal element over some base element
 pub struct Modal<'a, Message, Renderer> {
@@ -40,11 +38,10 @@ impl<'a, Message, Renderer> Modal<'a, Message, Renderer> {
     }
 }
 
-impl<'a, Message, Renderer> Widget<Message, Renderer>
-for Modal<'a, Message, Renderer>
-    where
-        Renderer: advanced::Renderer,
-        Message: Clone,
+impl<'a, Message, Renderer> Widget<Message, Renderer> for Modal<'a, Message, Renderer>
+where
+    Renderer: advanced::Renderer,
+    Message: Clone,
 {
     fn children(&self) -> Vec<widget::Tree> {
         vec![
@@ -65,11 +62,7 @@ for Modal<'a, Message, Renderer>
         self.base.as_widget().height()
     }
 
-    fn layout(
-        &self,
-        renderer: &Renderer,
-        limits: &Limits,
-    ) -> layout::Node {
+    fn layout(&self, renderer: &Renderer, limits: &Limits) -> layout::Node {
         self.base.as_widget().layout(renderer, limits)
     }
 
@@ -158,12 +151,9 @@ for Modal<'a, Message, Renderer>
         renderer: &Renderer,
         operation: &mut dyn widget::Operation<Message>,
     ) {
-        self.base.as_widget().operate(
-            &mut state.children[0],
-            layout,
-            renderer,
-            operation,
-        );
+        self.base
+            .as_widget()
+            .operate(&mut state.children[0], layout, renderer, operation);
     }
 }
 
@@ -175,25 +165,17 @@ struct Overlay<'a, 'b, Message, Renderer> {
 }
 
 impl<'a, 'b, Message, Renderer> overlay::Overlay<Message, Renderer>
-for Overlay<'a, 'b, Message, Renderer>
-    where
-        Renderer: advanced::Renderer,
-        Message: Clone,
+    for Overlay<'a, 'b, Message, Renderer>
+where
+    Renderer: advanced::Renderer,
+    Message: Clone,
 {
-    fn layout(
-        &self,
-        renderer: &Renderer,
-        _bounds: Size,
-        position: Point,
-    ) -> layout::Node {
+    fn layout(&self, renderer: &Renderer, _bounds: Size, position: Point) -> layout::Node {
         let limits = layout::Limits::new(Size::ZERO, self.size)
             .width(Length::Fill)
             .height(Length::Fill);
 
-        let mut child = self
-            .content
-            .as_widget()
-            .layout(renderer, &limits);
+        let mut child = self.content.as_widget().layout(renderer, &limits);
 
         child.align(Alignment::Center, Alignment::Center, limits.max());
 
@@ -215,10 +197,7 @@ for Overlay<'a, 'b, Message, Renderer>
         let content_bounds = layout.children().next().unwrap().bounds();
 
         if let Some(message) = self.on_blur.as_ref() {
-            if let Event::Mouse(mouse::Event::ButtonPressed(
-                                    mouse::Button::Left,
-                                )) = &event
-            {
+            if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) = &event {
                 if !cursor.is_over(content_bounds) {
                     shell.publish(message.clone());
                     return event::Status::Captured;
@@ -305,19 +284,16 @@ for Overlay<'a, 'b, Message, Renderer>
         layout: Layout<'_>,
         renderer: &Renderer,
     ) -> Option<overlay::Element<'c, Message, Renderer>> {
-        self.content.as_widget_mut().overlay(
-            self.tree,
-            layout.children().next().unwrap(),
-            renderer,
-        )
+        self.content
+            .as_widget_mut()
+            .overlay(self.tree, layout.children().next().unwrap(), renderer)
     }
 }
 
-impl<'a, Message, Renderer> From<Modal<'a, Message, Renderer>>
-for Element<'a, Message, Renderer>
-    where
-        Renderer: 'a + advanced::Renderer,
-        Message: 'a + Clone,
+impl<'a, Message, Renderer> From<Modal<'a, Message, Renderer>> for Element<'a, Message, Renderer>
+where
+    Renderer: 'a + advanced::Renderer,
+    Message: 'a + Clone,
 {
     fn from(modal: Modal<'a, Message, Renderer>) -> Self {
         Element::new(modal)

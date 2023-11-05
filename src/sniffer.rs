@@ -10,7 +10,7 @@ use std::thread;
 
 #[derive(Default)]
 pub struct LiveCapture {
-    pub interface: String,
+    pub interface: Option<Device>,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
 }
@@ -19,32 +19,34 @@ impl LiveCapture {
     pub fn capture(&mut self) {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
-
+        let interface = self.interface.clone();
         thread::spawn(move || {
             let mut index = 0;
 
             //only for development
-            let device = Device::lookup().unwrap().expect("Device Lookup failed");
+            //let device = Device::lookup().unwrap().expect("Device Lookup failed");
 
-            let mut cap = pcap::Capture::from_device(device)
-                .unwrap()
-                .immediate_mode(true)
-                .promisc(true)
-                .open()
-                .unwrap();
-            //use when more types are captured
-            //let Linktype(_cap_type) = cap.get_datalink();
+            if let Some(int) = interface {
+                let mut cap = pcap::Capture::from_device(int)
+                    .unwrap()
+                    .immediate_mode(true)
+                    .promisc(true)
+                    .open()
+                    .unwrap();
+                //use when more types are captured
+                //let Linktype(_cap_type) = cap.get_datalink();
 
-            while let Ok(packet) = cap.next_packet() {
-                let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
-                    continue;
-                };
-                let result = sender.send(eth_frame);
-                if result.is_err() {
-                    // receiver was dropped
-                    break;
+                while let Ok(packet) = cap.next_packet() {
+                    let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
+                        continue;
+                    };
+                    let result = sender.send(eth_frame);
+                    if result.is_err() {
+                        // receiver was dropped
+                        break;
+                    }
+                    index += 1;
                 }
-                index += 1;
             }
         });
     }
@@ -53,19 +55,9 @@ impl LiveCapture {
         self.receiver = None;
     }
 
-    pub fn get_interfaces() -> Result<Vec<Interface>, Error> {
-        let interface_list: Vec<Interface> = pcap::Device::list()
-            .expect("No devices")
-            .into_iter()
-            .map(|interface| Interface {
-                name: interface.name,
-                desc: interface.desc,
-                addr: interface.addresses.iter().map(|x| x.addr).collect(),
-                status: interface.flags.connection_status,
-            })
-            .collect();
-
-        Ok(interface_list)
+    pub fn get_interfaces() -> Result<Vec<Device>, Error> {
+        let devices = pcap::Device::list().expect("no devices");
+        Ok(devices)
     }
 }
 

@@ -2,14 +2,15 @@ use crate::packets::traits::Describable;
 use crate::sniffer::LiveCapture;
 use std::fmt;
 
-use iced::widget::{self, button, container, row, scrollable, text,Text, Column};
+use iced::widget::{self, button, container, row, scrollable, text, Column, Text};
 use iced::{executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme};
 use iced_table::table;
 
+use crate::gui::modal::Modal;
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::shared_objs::Interface;
 use std::time::Duration;
-use crate::gui::modal::Modal;
+use pcap::Device;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -19,7 +20,7 @@ pub enum Message {
     NextPage,
     PreviousPage,
     FrameSelected(i32),
-    DeviceSelected(Interface),
+    DeviceSelected(Device),
     ToggleModal,
     NoOp,
     SyncHeader(scrollable::AbsoluteOffset),
@@ -104,9 +105,10 @@ impl Application for CaptureApp {
                 ])
             }
             Message::DeviceSelected(interface) => {
-                self.sniffer.interface = interface.name;
+                self.sniffer.interface = Some(interface);
+                self.show_dev_modal = !self.show_dev_modal
             }
-            Message::ToggleModal => self.show_dev_modal = !self.show_dev_modal
+            Message::ToggleModal => self.show_dev_modal = !self.show_dev_modal,
         };
         Command::none()
     }
@@ -131,7 +133,7 @@ impl Application for CaptureApp {
         };
 
         let button_row = row![
-            page_button("Start", !self.running, Message::Start),
+            page_button("Start", !self.running && self.sniffer.interface.is_some(), Message::Start),
             page_button("Stop", self.running, Message::Stop),
             page_button("Previous", self.page != 0, Message::PreviousPage),
             page_button(
@@ -139,66 +141,87 @@ impl Application for CaptureApp {
                 (self.page + 1) * self.per_page < self.sniffer.captured_packets.len(),
                 Message::NextPage
             ),
-            page_button("Pick Device", !self.show_dev_modal, Message::ToggleModal),
+            page_button("Pick Device", !self.running, Message::ToggleModal),
         ]
         .spacing(25);
-            //.width(Length::Fill)
-            //.height(Length::Fill);
+
         let mut column = widget::column!(button_row).spacing(10);
 
-            if let Some(data) = self
-                .sniffer
-                .captured_packets
-                .chunks(self.per_page)
-                .nth(self.page)
-            {
-                let table = iced::widget::responsive(move |size| {
-                    iced_table::table(
-                        self.header.clone(),
-                        self.body.clone(),
-                        &desc_columns,
-                        data,
-                        Message::SyncHeader,
-                    )
-                        .min_width(size.width)
-                        .into()
-                });
-                column = column.push(table)
+        if let Some(data) = self
+            .sniffer
+            .captured_packets
+            .chunks(self.per_page)
+            .nth(self.page)
+        {
+            let table = iced::widget::responsive(move |size| {
+                iced_table::table(
+                    self.header.clone(),
+                    self.body.clone(),
+                    &desc_columns,
+                    data,
+                    Message::SyncHeader,
+                )
+                .min_width(size.width)
+                .into()
+            });
+            column = column.push(table)
+        } else {
+            let device = if let Some(interface) = &self.sniffer.interface{
+                interface.name.clone()
             }else{
-                column = column.push(row!(text("No capture")).height(Length::Fill).width(Length::Fill))
-            }
+              "None".to_string()
+            };
+            column = column.push(
+                row!(
+                    text(format!("Selected Device: {:?}", device)),
+                )
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+            )
+        }
 
-            if let Some(frame) = { self.selected }.and_then(|selected_id| {
-                { self.sniffer.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
-            }) {
-                let text = Text::new(frame.get_long());
-                let content = widget::column!(text).padding(13).spacing(5);
-                column = column.push(scrollable(content).height(Length::Fill));
-            }
+        if let Some(frame) = { self.selected }.and_then(|selected_id| {
+            { self.sniffer.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
+        }) {
+            let text = Text::new(frame.get_long());
+            let content = widget::column!(text).padding(13).spacing(5);
+            column = column.push(scrollable(content).height(Length::Fill));
+        }
+
         if self.show_dev_modal {
             let interfaces = match LiveCapture::get_interfaces() {
                 Ok(interfaces) => interfaces,
                 Err(_) => vec![], // Handle the error appropriately
             };
 
-            let interface_buttons: Vec<Element<_>> = interfaces.iter().map(|interface| {
-                button(Text::new(format!("{} {:?}", interface.name, interface.addr)))
+            let interface_buttons: Vec<Element<_>> = interfaces
+                .iter()
+                .map(|interface| {
+                    button(Text::new(format!(
+                        "{} {:?}",
+                        interface.name, interface.addresses
+                    )))
                     .on_press(Message::DeviceSelected(interface.clone()))
                     .into()
-            }).collect();
+                })
+                .collect();
 
             // Then create the scrollable content
-            let scrollable_content: Element<_> = interface_buttons.into_iter().fold(
-                Column::new().spacing(10),
-                |column, button| column.push(button)
-            ).into();
+            let scrollable_content: Element<_> = interface_buttons
+                .into_iter()
+                .fold(Column::new().spacing(10), |column, button| {
+                    column.push(button)
+                })
+                .into();
 
             let scrollable_modal = scrollable(scrollable_content)
                 .width(Length::Fill)
                 .height(Length::Fill);
             let s_container = container(scrollable_modal).width(300).padding(10);
-            Modal::new(column, s_container).on_blur(Message::ToggleModal).into()
-        }else{
+            Modal::new(column, s_container)
+                .on_blur(Message::ToggleModal)
+                .into()
+        } else {
             column.into()
         }
     }
