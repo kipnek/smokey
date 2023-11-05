@@ -1,14 +1,14 @@
 use crate::packets::shared_objs::Description;
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 pub trait Layer: Send + Sync + Debug {
     fn append_summary(&self, target: &mut String);
 
     fn get_next(&self) -> Option<&dyn Layer>;
 
-    fn source(&self) -> String;
-    fn destination(&self) -> String;
+    fn source(&self) -> &dyn Display;
+    fn destination(&self) -> &dyn Display;
 
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_owned()
@@ -16,13 +16,11 @@ pub trait Layer: Send + Sync + Debug {
 }
 
 pub trait Describable: Send + Sync + Debug + Layer {
-    fn get_short(&self) -> Description;
-
     fn get_long(&self) -> String;
 
     fn get_id(&self) -> i32;
 
-    fn get_description(&self) -> &Description;
+    fn get_description(&self) -> Description<'_>;
 }
 
 /*

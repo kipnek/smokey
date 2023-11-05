@@ -297,12 +297,12 @@ impl<'a, 'b> table::Column<'a, 'b, Message, Renderer> for DescriptionColumn {
     ) -> Element<'a, Message, Renderer> {
         let row = row.get_description();
         let cell_content: Element<Message> = match self.field {
-            DescriptionTable::Id => text(row.id.to_string()).into(),
-            DescriptionTable::Timestamp => text(row.timestamp.to_owned()).into(),
-            DescriptionTable::Source => text(row.source.to_owned()).into(),
-            DescriptionTable::Destination => text(row.destination.to_owned()).into(),
-            DescriptionTable::Info => text(row.info.to_owned()).into(),
-            DescriptionTable::Details => button(Text::new("Details"))
+            DescriptionTable::Id => text(row.id).into(),
+            DescriptionTable::Timestamp => text(row.timestamp).into(),
+            DescriptionTable::Source => text(row.src_dest_layer.source()).into(),
+            DescriptionTable::Destination => text(row.src_dest_layer.destination()).into(),
+            DescriptionTable::Info => text(row.info_layer.info()).into(),
+            DescriptionTable::Details => button("Details")
                 .on_press(Message::FrameSelected(row.id))
                 .into(),
         };

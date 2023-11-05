@@ -6,7 +6,7 @@ use crate::packets::{
 use chrono::Utc;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
-use std::fmt::Write;
+use std::fmt::{Display, Write};
 
 #[derive(Clone, Debug)]
 pub struct EthernetHeader {
@@ -20,7 +20,6 @@ pub struct EthernetFrame {
     pub id: i32,
     pub timestamp: String,
     pub header: EthernetHeader,
-    pub description: Description,
     pub payload: Option<Box<dyn Layer>>,
 }
 
@@ -40,17 +39,12 @@ impl EthernetFrame {
             _ => None,
         };
 
-        let mut frame = EthernetFrame {
+        Some(EthernetFrame {
             id,
             timestamp: Utc::now().to_string(),
             header,
-            description: Description::default(),
             payload,
-        };
-
-        frame.description = frame.get_short();
-
-        Some(frame)
+        })
     }
 }
 
@@ -71,12 +65,12 @@ EtherType: {}",
         self.payload.as_deref()
     }
 
-    fn source(&self) -> String {
-        self.header.source_mac.clone()
+    fn source(&self) -> &dyn Display {
+        &self.header.source_mac
     }
 
-    fn destination(&self) -> String {
-        self.header.destination_mac.clone()
+    fn destination(&self) -> &dyn Display {
+        &self.header.destination_mac
     }
 
     fn info(&self) -> String {
@@ -85,27 +79,6 @@ EtherType: {}",
 }
 
 impl Describable for EthernetFrame {
-    fn get_short(&self) -> Description {
-        let (s_addy, dest_addy) = match self.payload.as_deref() {
-            None => (
-                self.header.source_mac.clone(),
-                self.header.destination_mac.clone(),
-            ),
-            Some(network_layer) => (network_layer.source(), network_layer.destination()),
-        };
-
-        let layer: &dyn Layer = get_innermost_layer(self);
-
-        Description {
-            id: self.id,
-            id_string: self.id.to_string(),
-            timestamp: self.timestamp.clone(),
-            source: s_addy,
-            destination: dest_addy,
-            info: layer.info(),
-        }
-    }
-
     fn get_long(&self) -> String {
         let mut ret = String::new();
         self.append_summary(&mut ret);
@@ -124,8 +97,17 @@ impl Describable for EthernetFrame {
         self.id
     }
 
-    fn get_description(&self) -> &Description {
-        &self.description
+    fn get_description(&self) -> Description<'_> {
+        let next_else_self: &dyn Layer = self.payload.as_deref().unwrap_or(self);
+
+        let innermost_layer: &dyn Layer = get_innermost_layer(self);
+
+        Description {
+            id: self.id,
+            timestamp: &self.timestamp,
+            src_dest_layer: next_else_self,
+            info_layer: innermost_layer,
+        }
     }
 }
 
