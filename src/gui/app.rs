@@ -98,7 +98,7 @@ impl Application for CaptureApp {
             }
             Message::NoOp => {}
             Message::SyncHeader(offset) => {
-                return Command::batch(vec![
+                return Command::batch([
                     scrollable::scroll_to(self.header.clone(), offset),
                     scrollable::scroll_to(self.footer.clone(), offset),
                 ])
@@ -143,7 +143,7 @@ impl Application for CaptureApp {
             .chunks(self.per_page)
             .nth(self.page)
         {
-            let desc_columns: Vec<DescriptionColumn> = vec![
+            let desc_columns = [
                 DescriptionColumn::new(DescriptionTable::Id, 100.0),
                 DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
                 DescriptionColumn::new(DescriptionTable::Source, 200.0),
@@ -164,19 +164,11 @@ impl Application for CaptureApp {
             });
             column = column.push(table)
         } else {
-            let device = if let Some(interface) = &self.sniffer.interface{
-                interface.name.clone()
-            }else{
-              "None".to_string()
-            };
-            column = column.push(
-                row!(
-                    text(format!("Selected Device: {:?}", device)),
-                )
-                    .height(Length::Fill)
-                    .width(Length::Fill),
-            )
-        }
+            let device =
+                { self.sniffer.interface.as_ref() }.map_or("None", |interface| &interface.name);
+            let text = text(format!("Selected Device: {:?}", device));
+            column = column.push(row!(text).height(Length::Fill).width(Length::Fill))
+        };
 
         if let Some(frame) = { self.selected }.and_then(|selected_id| {
             { self.sniffer.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
