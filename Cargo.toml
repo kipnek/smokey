@@ -1,17 +1,17 @@
 [package]
-name        = "cnote"
-version     = "0.1.0"
-edition     = "2021"
-authors     = ["Al email@lostaccesslalalalalalalalala.com"]
+name = "cnote"
+version = "0.1.0"
+edition = "2021"
+authors = ["Al email@lostaccesslalalalalalalalala.com"]
 description = "cli packet capture program, ramping up for gui"
-license     = "MIT"
-repository  = "https://github.com/sigh-gone/cnote"
+license = "MIT"
+repository = "https://github.com/sigh-gone/cnote"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pnet   = "0.34.0"
-pcap   = "1.1.0"
+pnet = "0.34.0"
+pcap = "1.1.0"
 chrono = "0.4.28"
 # serde      = { version = "1.0.188", features = ["derive"] }
 # serde_json = "1.0.107"
