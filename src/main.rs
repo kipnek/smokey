@@ -1,12 +1,6 @@
-mod packets;
-mod sniffer;
-//mod basic_traits;
-mod gui;
-
-use crate::gui::app::CaptureApp;
+use cnote::gui::app::CaptureApp;
 use iced::Application;
 
-use pcap::Capture;
 use std::panic;
 
 fn main() -> iced::Result {
