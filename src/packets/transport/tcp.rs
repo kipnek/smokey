@@ -1,3 +1,4 @@
+use crate::packets::shared_objs::LayerData;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::{Display, Write};
@@ -104,8 +105,8 @@ flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}"
         );
     }
 
-    fn get_next(&self) -> Option<&dyn Layer> {
-        None
+    fn get_next(&self) -> LayerData {
+        LayerData::Data(&self.payload)
     }
 
     fn source(&self) -> &dyn Display {

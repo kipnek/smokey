@@ -1,3 +1,4 @@
+use crate::packets::shared_objs::{LayerData, Transport};
 use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
 use pnet::packet::Packet;
@@ -95,7 +96,7 @@ impl Ipv4Options {
 #[derive(Debug)]
 pub struct Ipv4Packet {
     pub header: Ipv4Header,
-    pub payload: Option<Box<dyn Layer>>,
+    pub payload: Transport,
 }
 
 impl Ipv4Packet {
@@ -119,14 +120,11 @@ impl Ipv4Packet {
         };
 
         let payload = match header.next_header {
-            IpNextHeaderProtocols::Tcp => {
-                TcpPacket::new(packet.payload()).map(|x| Box::new(x) as _)
-            }
-            IpNextHeaderProtocols::Udp => {
-                UdpPacket::new(packet.payload()).map(|x| Box::new(x) as _)
-            }
+            IpNextHeaderProtocols::Tcp => TcpPacket::new(packet.payload()).map(Transport::TCP),
+            IpNextHeaderProtocols::Udp => UdpPacket::new(packet.payload()).map(Transport::UDP),
             _ => None,
         };
+        let payload = payload.unwrap_or_else(|| Transport::Other(packet.payload().to_vec()));
 
         Some(Ipv4Packet { header, payload })
     }
@@ -179,8 +177,12 @@ options: {options_string}"
         );
     }
 
-    fn get_next(&self) -> Option<&dyn Layer> {
-        self.payload.as_deref()
+    fn get_next(&self) -> LayerData {
+        match &self.payload {
+            Transport::TCP(x) => LayerData::Layer(x as _),
+            Transport::UDP(x) => LayerData::Layer(x as _),
+            Transport::Other(x) => LayerData::Data(x),
+        }
     }
 
     fn source(&self) -> &dyn Display {

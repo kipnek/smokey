@@ -1,4 +1,8 @@
+use crate::packets::data_link::ethernet::EthernetFrame;
+use crate::packets::internet::ip::Ipv4Packet;
 use crate::packets::traits::Layer;
+use crate::packets::transport::tcp::TcpPacket;
+use crate::packets::transport::udp::UdpPacket;
 
 #[derive(Debug, Clone)]
 pub struct Description<'a> {
@@ -8,13 +12,28 @@ pub struct Description<'a> {
     pub info_layer: &'a dyn Layer,
 }
 
-/*
-       Device{
-           name: "".to_string(),
-           desc: None,
-           addresses: vec![],
-           flags: DeviceFlags { if_flags: IfFlags {
-               bits: 0,
-           }, connection_status: ConnectionStatus::Unknown },
-       };
-*/
+pub enum Data {
+    Ethernet(EthernetFrame),
+    Other(Vec<u8>),
+}
+
+#[derive(Debug)]
+pub enum Transport {
+    UDP(UdpPacket),
+    TCP(TcpPacket),
+    Other(Vec<u8>),
+}
+pub enum Application {}
+// enum Physical {}
+
+#[derive(Debug)]
+pub enum Network {
+    IPv4(Ipv4Packet),
+    // IPv6(Ipv6Packet),
+    Other(Vec<u8>),
+}
+
+pub enum LayerData<'a> {
+    Layer(&'a dyn Layer),
+    Data(&'a [u8]),
+}

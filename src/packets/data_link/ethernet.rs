@@ -1,6 +1,6 @@
 use crate::packets::{
     internet::ip::Ipv4Packet,
-    shared_objs::Description,
+    shared_objs::{Description, LayerData, Network},
     traits::{Describable, Layer},
 };
 use chrono::Utc;
@@ -20,7 +20,7 @@ pub struct EthernetFrame {
     pub id: i32,
     pub timestamp: String,
     pub header: EthernetHeader,
-    pub payload: Option<Box<dyn Layer>>,
+    pub payload: Network,
 }
 
 impl EthernetFrame {
@@ -34,10 +34,11 @@ impl EthernetFrame {
         };
 
         let payload = match header.ether_type {
-            EtherTypes::Ipv4 => Ipv4Packet::new(packet.payload()).map(|x| Box::new(x) as _),
+            EtherTypes::Ipv4 => Ipv4Packet::new(packet.payload()).map(|x| Network::IPv4(x)),
             // EtherTypes::Ipv6 => Ipv6Packet::new(packet.payload()).map(|x| Box::new(x) as _),
             _ => None,
         };
+        let payload = payload.unwrap_or_else(|| Network::Other(packet.payload().to_vec()));
 
         Some(EthernetFrame {
             id,
@@ -61,8 +62,11 @@ EtherType: {}",
         );
     }
 
-    fn get_next(&self) -> Option<&dyn Layer> {
-        self.payload.as_deref()
+    fn get_next(&self) -> LayerData {
+        match &self.payload {
+            Network::IPv4(x) => LayerData::Layer(x as _),
+            Network::Other(x) => LayerData::Data(x),
+        }
     }
 
     fn source(&self) -> &dyn Display {
@@ -83,11 +87,9 @@ impl Describable for EthernetFrame {
         let mut ret = String::new();
         self.append_summary(&mut ret);
 
-        let mut current_layer: Option<&dyn Layer> = self.payload.as_deref();
-        while let Some(layer) = &current_layer {
+        while let LayerData::Layer(layer) = self.get_next() {
             ret.push_str("\n\n");
             layer.append_summary(&mut ret);
-            current_layer = layer.get_next();
         }
 
         ret
@@ -98,7 +100,10 @@ impl Describable for EthernetFrame {
     }
 
     fn get_description(&self) -> Description<'_> {
-        let next_else_self: &dyn Layer = self.payload.as_deref().unwrap_or(self);
+        let next_else_self: &dyn Layer = match self.get_next() {
+            LayerData::Layer(x) => x,
+            _ => self as _,
+        };
 
         let innermost_layer: &dyn Layer = get_innermost_layer(self);
 
@@ -114,7 +119,7 @@ impl Describable for EthernetFrame {
 // helper functions
 
 fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
-    while let Some(next) = layer.get_next() {
+    while let LayerData::Layer(next) = layer.get_next() {
         layer = next;
     }
     layer

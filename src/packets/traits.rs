@@ -1,11 +1,11 @@
-use crate::packets::shared_objs::Description;
+use crate::packets::shared_objs::{Description, LayerData};
 
 use std::fmt::{Debug, Display};
 
 pub trait Layer: Send + Sync + Debug {
     fn append_summary(&self, target: &mut String);
 
-    fn get_next(&self) -> Option<&dyn Layer>;
+    fn get_next(&self) -> LayerData;
 
     fn source(&self) -> &dyn Display;
     fn destination(&self) -> &dyn Display;
@@ -99,4 +99,7 @@ For more advanced or efficient searching/filtering mechanisms,
 you might consider using data structures like trees, hashmaps, or
 databases tailored for network analysis. But for many typical use cases,
 the above method should be adequate.
+
+sounds good.
+im stry
  */

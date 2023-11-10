@@ -1,6 +1,8 @@
+use crate::packets::shared_objs::LayerData;
 use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::{Display, Write};
+
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
     pub source_port: u16,
@@ -56,8 +58,8 @@ malformed: {malformed}"
         );
     }
 
-    fn get_next(&self) -> Option<&dyn Layer> {
-        None
+    fn get_next(&self) -> LayerData {
+        LayerData::Data(&self.payload)
     }
 
     fn source(&self) -> &dyn Display {
