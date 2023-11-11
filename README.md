@@ -3,7 +3,7 @@ rust protocol analyzer (early dev)
 
 ## How it works
 
-##### if not Open Suse (or maybe other linux variations)
+#### if not Open Suse (or maybe other linux variations)
 first make sure rust is installed then clone the project then in the root of the 
 project
 ```cargo run```
