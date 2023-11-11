@@ -87,9 +87,11 @@ impl Describable for EthernetFrame {
         let mut ret = String::new();
         self.append_summary(&mut ret);
 
-        while let LayerData::Layer(layer) = self.get_next() {
+        let mut layer_data = self.get_next();
+        while let LayerData::Layer(layer) = layer_data {
             ret.push_str("\n\n");
             layer.append_summary(&mut ret);
+            layer_data = layer.get_next();
         }
 
         ret
