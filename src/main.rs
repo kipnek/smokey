@@ -10,7 +10,6 @@ use eframe::Frame;
 use egui;
 use egui::{Context, Ui};
 use std::panic;
-use std::process::Command;
 use std::time::Duration;
 
 fn main() -> Result<(), eframe::Error> {
