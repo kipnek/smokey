@@ -1,7 +1,7 @@
+use crate::packets::packet_traits::{Describable, Layer};
 use crate::packets::{
     internet::ip::Ipv4Packet,
     shared_objs::{Description, LayerData, Network},
-    traits::{Describable, Layer},
 };
 use chrono::Utc;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};

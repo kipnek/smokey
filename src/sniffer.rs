@@ -1,5 +1,5 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
-use iced::Error;
+//use iced::Error;
 use pcap::Device;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
@@ -15,15 +15,16 @@ impl LiveCapture {
     pub fn capture(&mut self) {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
-        let interface = self.interface.clone();
+        //let interface = self.interface.clone();
+        let interface = Some(Device::lookup().unwrap().unwrap());
         thread::spawn(move || {
             let mut index = 0;
 
             //only for development
             //let device = Device::lookup().unwrap().expect("Device Lookup failed");
 
-            if let Some(int) = interface {
-                let mut cap = pcap::Capture::from_device(int)
+            if let Some(interface) = interface {
+                let mut cap = pcap::Capture::from_device(interface)
                     .unwrap()
                     .immediate_mode(true)
                     .promisc(true)
@@ -48,10 +49,11 @@ impl LiveCapture {
     }
 
     pub fn stop(&mut self) {
+        println!("stopped");
         self.receiver = None;
     }
 
-    pub fn get_interfaces() -> Result<Vec<Device>, Error> {
+    pub fn get_interfaces() -> Result<Vec<Device>, pcap::Error> {
         let devices = pcap::Device::list().expect("no devices");
         Ok(devices)
     }

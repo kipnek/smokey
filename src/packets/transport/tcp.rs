@@ -1,5 +1,5 @@
+use crate::packets::packet_traits::Layer;
 use crate::packets::shared_objs::LayerData;
-use crate::packets::traits::Layer;
 use pnet::packet::Packet;
 use std::fmt::{Display, Write};
 

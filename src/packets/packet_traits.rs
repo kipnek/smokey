@@ -100,6 +100,4 @@ you might consider using data structures like trees, hashmaps, or
 databases tailored for network analysis. But for many typical use cases,
 the above method should be adequate.
 
-sounds good.
-im stry
  */

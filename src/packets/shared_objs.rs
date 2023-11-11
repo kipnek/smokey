@@ -1,6 +1,6 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::traits::Layer;
+use crate::packets::packet_traits::Layer;
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
 

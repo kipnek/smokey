@@ -1,5 +1,5 @@
+use crate::packets::packet_traits::Layer;
 use crate::packets::shared_objs::{LayerData, Transport};
-use crate::packets::traits::Layer;
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
 use pnet::packet::Packet;
 use pnet::packet::{

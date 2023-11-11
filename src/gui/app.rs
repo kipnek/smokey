@@ -1,15 +1,16 @@
-use crate::packets::traits::Describable;
+use crate::packets::packet_traits::Describable;
 use crate::sniffer::LiveCapture;
 use std::fmt;
+
+use crate::packets::data_link::ethernet::EthernetFrame;
+use pcap::Device;
+use std::time::Duration;
+/*
 
 use iced::widget::{self, button, container, row, scrollable, text, Column, Text};
 use iced::{executor, time, Application, Command, Element, Length, Renderer, Subscription, Theme};
 use iced_table::table;
-
 use crate::gui::modal::Modal;
-use crate::packets::data_link::ethernet::EthernetFrame;
-use std::time::Duration;
-use pcap::Device;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -98,7 +99,7 @@ impl Application for CaptureApp {
             }
             Message::NoOp => {}
             Message::SyncHeader(offset) => {
-                return Command::batch([
+                return Command::batch(vec![
                     scrollable::scroll_to(self.header.clone(), offset),
                     scrollable::scroll_to(self.footer.clone(), offset),
                 ])
@@ -123,7 +124,11 @@ impl Application for CaptureApp {
         };
 
         let button_row = row![
-            page_button("Start", !self.running && self.sniffer.interface.is_some(), Message::Start),
+            page_button(
+                "Start",
+                !self.running && self.sniffer.interface.is_some(),
+                Message::Start
+            ),
             page_button("Stop", self.running, Message::Stop),
             page_button("Previous", self.page != 0, Message::PreviousPage),
             page_button(
@@ -143,7 +148,7 @@ impl Application for CaptureApp {
             .chunks(self.per_page)
             .nth(self.page)
         {
-            let desc_columns = [
+            let desc_columns: Vec<DescriptionColumn> = vec![
                 DescriptionColumn::new(DescriptionTable::Id, 100.0),
                 DescriptionColumn::new(DescriptionTable::Timestamp, 200.0),
                 DescriptionColumn::new(DescriptionTable::Source, 200.0),
@@ -164,11 +169,17 @@ impl Application for CaptureApp {
             });
             column = column.push(table)
         } else {
-            let device =
-                { self.sniffer.interface.as_ref() }.map_or("None", |interface| &interface.name);
-            let text = text(format!("Selected Device: {:?}", device));
-            column = column.push(row!(text).height(Length::Fill).width(Length::Fill))
-        };
+            let device = if let Some(interface) = &self.sniffer.interface {
+                interface.name.clone()
+            } else {
+                "None".to_string()
+            };
+            column = column.push(
+                row!(text(format!("Selected Device: {:?}", device)),)
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+            )
+        }
 
         if let Some(frame) = { self.selected }.and_then(|selected_id| {
             { self.sniffer.captured_packets.iter() }.find(|frame| frame.get_id() == selected_id)
@@ -320,3 +331,4 @@ let ui = cache.draw(|| {
     Column::new().push(Text::new("This layout is cached!"))
 });
  */
+*/
