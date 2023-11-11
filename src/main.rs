@@ -73,10 +73,9 @@ impl LiveApp {
         if ui.button("Stop").clicked() {
             self.stop();
         }
-        self.table.ui(ui, &mut self.sniffer.captured_packets);
+        self.table.table_ui(ui, &mut self.sniffer.captured_packets);
         if let Some(id) = self.table.selected_packet {
-            if let Some(packet) = self.sniffer.captured_packets.get(id as usize)
-            {
+            if let Some(packet) = self.sniffer.captured_packets.get(id as usize) {
                 let text = packet.get_long();
                 println!("{:?}", text);
                 self.packet_to_drill = text;
@@ -94,7 +93,6 @@ impl LiveApp {
         self.running = false;
     }
 }
-
 
 pub struct Table {
     striped: bool,
@@ -115,27 +113,13 @@ impl Table {
     }
 }
 
-impl View<Vec<EthernetFrame>> for Table {
-    fn ui(&mut self, ui: &mut Ui, data: &mut Vec<EthernetFrame>) {
-        use egui_extras::{Size, StripBuilder};
-        StripBuilder::new(ui)
-            .size(Size::remainder().at_least(100.0)) // for the table
-            .vertical(|mut strip| {
-                strip.cell(|ui| {
-                    egui::ScrollArea::horizontal().show(ui, |ui| {
-                        self.table_ui(ui, data);
-                    });
-                });
-            });
-    }
-}
-
 impl Table {
     pub fn table_ui(&mut self, ui: &mut egui::Ui, data: &mut Vec<EthernetFrame>) {
         use egui_extras::{Column, TableBuilder};
         let mut table = TableBuilder::new(ui)
             .striped(self.striped)
             .resizable(self.resizable)
+            .auto_shrink([false, true])
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::auto())
             .column(Column::auto())
@@ -166,37 +150,42 @@ impl Table {
                     ui.strong("info");
                 });
             })
-            .body(|mut body| {
-                for packet in data {
+            .body(|body| {
+                body.rows(18.0, data.len(), |index, mut row| {
+                    let packet = &data[index];
                     let description = packet.get_description();
-                    body.row(18.0, |mut row| {
-                        row.col(|ui| {
-                            if ui.button(description.id.to_string()).clicked() {
-                                self.selected_packet = Some(description.id);
-                            }
-                        });
-                        row.col(|ui| {
-                            if ui.button(description.timestamp).clicked() {
-                                self.selected_packet = Some(description.id);
-                            }
-                        });
-                        row.col(|ui| {
-                            if ui.button(description.src_dest_layer.source().to_string()).clicked() {
-                                self.selected_packet = Some(description.id);
-                            }
-                        });
-                        row.col(|ui| {
-                            if ui.button(description.src_dest_layer.destination().to_string()).clicked() {
-                                self.selected_packet = Some(description.id);
-                            }
-                        });
-                        row.col(|ui| {
-                            if ui.button(description.info_layer.info()).clicked() {
-                                self.selected_packet = Some(description.id);
-                            }
-                        });
+                    row.col(|ui| {
+                        if ui.button(description.id.to_string()).clicked() {
+                            self.selected_packet = Some(description.id);
+                        }
                     });
-                }
+                    row.col(|ui| {
+                        if ui.button(description.timestamp).clicked() {
+                            self.selected_packet = Some(description.id);
+                        }
+                    });
+                    row.col(|ui| {
+                        if ui
+                            .button(description.src_dest_layer.source().to_string())
+                            .clicked()
+                        {
+                            self.selected_packet = Some(description.id);
+                        }
+                    });
+                    row.col(|ui| {
+                        if ui
+                            .button(description.src_dest_layer.destination().to_string())
+                            .clicked()
+                        {
+                            self.selected_packet = Some(description.id);
+                        }
+                    });
+                    row.col(|ui| {
+                        if ui.button(description.info_layer.info()).clicked() {
+                            self.selected_packet = Some(description.id);
+                        }
+                    });
+                });
             });
     }
 }
