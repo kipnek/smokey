@@ -1,14 +1,13 @@
 //use cnote::gui::app::CaptureApp;
 //use iced::Application;
 
-use cnote::gui::gui_traits::View;
 use cnote::packets::data_link::ethernet::EthernetFrame;
 use cnote::packets::packet_traits::Describable;
 use cnote::sniffer::LiveCapture;
 use eframe;
 use eframe::Frame;
 use egui;
-use egui::{Context, Ui};
+use egui::{Context, ScrollArea, Ui};
 use std::panic;
 use std::time::Duration;
 
@@ -55,32 +54,33 @@ impl LiveApp {
         }
     }
     pub fn get_packets(&mut self) {
-        if self.running {
-            if let Some(receiver) = self.sniffer.receiver.as_mut() {
-                self.sniffer.captured_packets.extend(receiver.try_iter());
-            }
+        if let Some(receiver) = self.sniffer.receiver.as_mut() {
+            self.sniffer.captured_packets.extend(receiver.try_iter());
         }
     }
     pub fn ui(&mut self, ui: &mut Ui) {
         if self.running {
+            self.get_packets();
             ui.ctx().request_repaint_after(Duration::from_secs(1));
         }
-        self.get_packets();
         if ui.button("Start").clicked() {
             self.start();
         }
         if ui.button("Stop").clicked() {
             self.stop();
         }
-        self.table.table_ui(ui, &mut self.sniffer.captured_packets);
+
+        ScrollArea::vertical().max_height(500.0).show(ui, |ui| {
+            self.table.table_ui(ui, &mut self.sniffer.captured_packets);
+        });
         if let Some(id) = self.table.selected_packet {
             if let Some(packet) = self.sniffer.captured_packets.get(id as usize) {
                 let text = packet.get_long();
-                println!("{:?}", text);
                 self.packet_to_drill = text;
             }
             self.table.selected_packet = None;
         }
+
         ui.label(&self.packet_to_drill);
     }
     pub fn start(&mut self) {
@@ -125,7 +125,8 @@ impl Table {
             .column(Column::auto())
             .column(Column::auto())
             .column(Column::auto())
-            .min_scrolled_height(0.0);
+            .min_scrolled_height(0.0)
+            .resizable(true);
 
         if let Some(row_nr) = self.scroll_to_row.take() {
             table = table.scroll_to_row(row_nr, None);
