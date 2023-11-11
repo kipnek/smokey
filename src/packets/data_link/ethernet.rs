@@ -1,7 +1,7 @@
+use crate::packets::packet_traits::{Describable, Layer};
 use crate::packets::{
     internet::ip::Ipv4Packet,
     shared_objs::{Description, LayerData, Network},
-    traits::{Describable, Layer},
 };
 use chrono::Utc;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
@@ -87,9 +87,11 @@ impl Describable for EthernetFrame {
         let mut ret = String::new();
         self.append_summary(&mut ret);
 
-        while let LayerData::Layer(layer) = self.get_next() {
+        let mut layer_data = self.get_next();
+        while let LayerData::Layer(layer) = layer_data {
             ret.push_str("\n\n");
             layer.append_summary(&mut ret);
+            layer_data = layer.get_next();
         }
 
         ret
