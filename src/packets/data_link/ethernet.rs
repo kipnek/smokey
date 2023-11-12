@@ -10,15 +10,15 @@ use std::fmt::{Display, Write};
 
 #[derive(Clone, Debug)]
 pub struct EthernetHeader {
-    pub source_mac: String,
-    pub destination_mac: String,
+    pub source_mac: Box<str>,
+    pub destination_mac: Box<str>,
     pub ether_type: EtherType,
 }
 
 #[derive(Debug)]
 pub struct EthernetFrame {
     pub id: i32,
-    pub timestamp: String,
+    pub timestamp: Box<str>,
     pub header: EthernetHeader,
     pub payload: Network,
 }
@@ -28,21 +28,21 @@ impl EthernetFrame {
         let packet = EthernetPacket::new(packet.data)?;
 
         let header = EthernetHeader {
-            source_mac: packet.get_source().to_string(),
-            destination_mac: packet.get_destination().to_string(),
+            source_mac: packet.get_source().to_string().into_boxed_str(),
+            destination_mac: packet.get_destination().to_string().into_boxed_str(),
             ether_type: packet.get_ethertype(),
         };
 
         let payload = match header.ether_type {
-            EtherTypes::Ipv4 => Ipv4Packet::new(packet.payload()).map(|x| Network::IPv4(x)),
+            EtherTypes::Ipv4 => Ipv4Packet::new(packet.payload()).map(Network::IPv4),
             // EtherTypes::Ipv6 => Ipv6Packet::new(packet.payload()).map(|x| Box::new(x) as _),
             _ => None,
-        };
-        let payload = payload.unwrap_or_else(|| Network::Other(packet.payload().to_vec()));
+        }
+        .unwrap_or_else(|| Network::Other(packet.payload().to_vec().into_boxed_slice()));
 
         Some(EthernetFrame {
             id,
-            timestamp: Utc::now().to_string(),
+            timestamp: Utc::now().to_string().into_boxed_str(),
             header,
             payload,
         })

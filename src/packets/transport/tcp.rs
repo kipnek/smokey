@@ -42,7 +42,7 @@ impl TcpHeader {
 #[derive(Default, Debug, Clone)]
 pub struct TcpPacket {
     pub header: TcpHeader,
-    pub payload: Vec<u8>,
+    pub payload: Box<[u8]>,
 }
 
 impl TcpPacket {
@@ -63,7 +63,7 @@ impl TcpPacket {
 
         Some(TcpPacket {
             header,
-            payload: packet.payload().to_vec(),
+            payload: packet.payload().to_vec().into_boxed_slice(),
         })
     }
 }

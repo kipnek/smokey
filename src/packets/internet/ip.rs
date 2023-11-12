@@ -15,12 +15,12 @@ pub struct Ipv4Header {
     pub ecn: u8,
     pub total_length: u16,
     pub identification: u16,
-    pub options: Vec<Ipv4Options>,
+    pub options: Box<[Ipv4Options]>,
     pub flags_fragment_offset: u16,
     pub time_to_live: u8,
     pub header_checksum: u16,
-    pub source_address: String,
-    pub destination_address: String,
+    pub source_address: Box<str>,
+    pub destination_address: Box<str>,
     pub next_header: IpNextHeaderProtocol,
     pub flags: Ipv4Flags,
 }
@@ -40,7 +40,7 @@ pub enum Ipv4Options {
     Ssrr,
     Rr,
     Timestamp,
-    Unknown(String),
+    Unknown(Box<str>),
 }
 
 impl Ipv4Header {
@@ -52,7 +52,7 @@ impl Ipv4Header {
         }
     }
 
-    pub fn set_options(options: Ipv4OptionIterable) -> Vec<Ipv4Options> {
+    pub fn set_options(options: Ipv4OptionIterable) -> Box<[Ipv4Options]> {
         options
             .map(|option| {
                 match option.get_number().0 {
@@ -69,13 +69,13 @@ impl Ipv4Header {
                     // Timestamp
                     0x44 => Ipv4Options::Timestamp,
                     // ... add other options as needed
-                    _ => Ipv4Options::Unknown(format!(
-                        "Unknown Option: {:#X}",
-                        option.get_number().0
-                    )),
+                    _ => Ipv4Options::Unknown(
+                        format!("Unknown Option: {:#X}", option.get_number().0).into_boxed_str(),
+                    ),
                 }
             })
-            .collect()
+            .collect::<Vec<_>>()
+            .into_boxed_slice()
     }
 }
 
@@ -113,8 +113,8 @@ impl Ipv4Packet {
             flags_fragment_offset: packet.get_fragment_offset(),
             time_to_live: packet.get_ttl(),
             header_checksum: packet.get_checksum(),
-            source_address: packet.get_source().to_string(),
-            destination_address: packet.get_destination().to_string(),
+            source_address: packet.get_source().to_string().into_boxed_str(),
+            destination_address: packet.get_destination().to_string().into_boxed_str(),
             next_header: packet.get_next_level_protocol(),
             flags: Ipv4Header::set_flags(packet.get_flags()),
         };
@@ -123,8 +123,8 @@ impl Ipv4Packet {
             IpNextHeaderProtocols::Tcp => TcpPacket::new(packet.payload()).map(Transport::TCP),
             IpNextHeaderProtocols::Udp => UdpPacket::new(packet.payload()).map(Transport::UDP),
             _ => None,
-        };
-        let payload = payload.unwrap_or_else(|| Transport::Other(packet.payload().to_vec()));
+        }
+        .unwrap_or_else(|| Transport::Other(packet.payload().to_vec().into_boxed_slice()));
 
         Some(Ipv4Packet { header, payload })
     }
@@ -203,13 +203,13 @@ options: {options_string}"
 
 #[derive(Debug, Clone)]
 pub struct Ipv6Header {
-    pub payload: Vec<u8>,
+    pub payload: Box<[u8]>,
     pub traffic_class: u8,
     pub flow_label: u16,
     pub payload_length: u16,
     //pub next_header: ProtocolDescriptor,
     pub hop_limit: u8,
-    pub source: String,
-    pub destination: String,
+    pub source: Box<str>,
+    pub destination: Box<str>,
     pub version: u8,
 }

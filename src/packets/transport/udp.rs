@@ -15,7 +15,7 @@ pub struct UdpHeader {
 #[derive(Default, Debug, Clone)]
 pub struct UdpPacket {
     pub header: UdpHeader,
-    pub payload: Vec<u8>,
+    pub payload: Box<[u8]>,
 }
 
 impl UdpPacket {
@@ -32,7 +32,7 @@ impl UdpPacket {
 
         Some(UdpPacket {
             header,
-            payload: packet.payload().to_vec(),
+            payload: packet.payload().to_vec().into_boxed_slice(),
         })
     }
 }
