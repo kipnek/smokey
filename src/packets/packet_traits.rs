@@ -1,5 +1,6 @@
 use crate::packets::shared_objs::{Description, LayerData};
 
+use std::borrow::Cow;
 use std::fmt::{Debug, Display};
 
 pub trait Layer: Send + Sync + Debug {
@@ -7,8 +8,8 @@ pub trait Layer: Send + Sync + Debug {
 
     fn get_next(&self) -> LayerData;
 
-    fn source(&self) -> &dyn Display;
-    fn destination(&self) -> &dyn Display;
+    fn source(&self) -> Cow<'_, str>;
+    fn destination(&self) -> Cow<'_, str>;
 
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_owned()

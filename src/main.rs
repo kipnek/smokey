@@ -240,12 +240,8 @@ impl PacketTable {
                     [
                         description.id.to_string().as_str(),
                         description.timestamp,
-                        description.src_dest_layer.source().to_string().as_str(),
-                        description
-                            .src_dest_layer
-                            .destination()
-                            .to_string()
-                            .as_str(),
+                        description.src_dest_layer.source().as_ref(),
+                        description.src_dest_layer.destination().as_ref(),
                         description.info_layer.info().as_str(),
                     ]
                     .into_iter()
