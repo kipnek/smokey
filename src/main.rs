@@ -3,17 +3,18 @@
 
 use cnote::packets::data_link::ethernet::EthernetFrame;
 use cnote::packets::packet_traits::Describable;
-use cnote::sniffer::LiveCapture;
+use cnote::sniffer::Sniffer;
 use eframe;
 use eframe::Frame;
 use egui;
-use egui::{Context, ScrollArea, Ui};
+use egui::{Context, ScrollArea, Ui, WidgetText};
 use std::panic;
 use std::time::Duration;
+use egui_tiles::{Behavior, TileId, UiResponse};
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        drag_and_drop_support: true,
+        //drag_and_drop_support: true,
 
         initial_window_size: Some([1280.0, 1024.0].into()),
 
@@ -25,32 +26,76 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "egui demo app",
         options,
-        Box::new(|cc| Box::new(LiveApp::new(cc))),
+        Box::new(|cc| Box::new(Capture::new())),
     )
 }
-
-pub struct LiveApp {
+pub struct Capture {
     pub running: bool,
-    pub sniffer: LiveCapture,
-    pub table: Table,
-    pub packet_to_drill: String,
+    pub sniffer: Sniffer,
+    pub tree : egui_tiles::Tree<Pane>,
+}
+struct TreeBehavior<'a> {
+    captured_packets: &'a Vec<EthernetFrame>,
+    drilldown: &'a String,
+    payload: &'a Vec<u8>,
+}
+pub struct Pane {
+    title: String,
+    module: Module,
 }
 
-impl eframe::App for LiveApp {
-    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
-        egui::CentralPanel::default()
-            .frame(egui::Frame::dark_canvas(&ctx.style()))
-            .show(ctx, |ui| self.ui(ui));
+pub struct Drilldown{
+    pub info : String,
+}
+
+impl Drilldown{
+    pub fn new()->Self{
+        Self{
+            info: "".to_string(),
+        }
+    }
+    pub fn render(){
+
     }
 }
 
-impl LiveApp {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+
+impl eframe::App for Capture {
+    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+        if self.running {
+            self.get_packets();
+            ctx.request_repaint_after(Duration::from_secs(1));
+        }
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let mut behavior = TreeBehavior {
+                captured_packets: &self.sniffer.captured_packets,
+                drilldown: &"".to_string(),
+                payload: &vec![],
+            };
+            self.tree.ui(&mut behavior, ui);
+        });
+        /*egui::CentralPanel::default()
+            .frame(egui::Frame::dark_canvas(&ctx.style()))
+            .show(ctx, |ui| self.ui(ui));*/
+    }
+}
+impl<'a> Behavior<Pane> for TreeBehavior<'a> {
+    fn pane_ui(&mut self, _ui: &mut Ui, _tile_id: TileId, _pane: &mut Pane) -> UiResponse {
+        UiResponse::None
+    }
+
+    fn tab_title_for_pane(&mut self, pane: &Pane) -> WidgetText {
+        WidgetText::default()
+    }
+}
+
+
+impl Capture {
+    pub fn new() -> Self {
         Self {
             running: false,
             sniffer: Default::default(),
-            table: Table::new(),
-            packet_to_drill: String::new(),
+            tree : create_tree(),
         }
     }
     pub fn get_packets(&mut self) {
@@ -59,10 +104,6 @@ impl LiveApp {
         }
     }
     pub fn ui(&mut self, ui: &mut Ui) {
-        if self.running {
-            self.get_packets();
-            ui.ctx().request_repaint_after(Duration::from_secs(1));
-        }
         if ui.button("Start").clicked() {
             self.start();
         }
@@ -70,8 +111,8 @@ impl LiveApp {
             self.stop();
         }
 
-        ScrollArea::vertical().max_height(500.0).show(ui, |ui| {
-            self.table.table_ui(ui, &mut self.sniffer.captured_packets);
+        /*ScrollArea::vertical().max_height(500.0).show(ui, |ui| {
+            self.table.render(ui, &mut self.sniffer.captured_packets);
         });
         if let Some(id) = self.table.selected_packet {
             if let Some(packet) = self.sniffer.captured_packets.get(id as usize) {
@@ -81,7 +122,7 @@ impl LiveApp {
             self.table.selected_packet = None;
         }
 
-        ui.label(&self.packet_to_drill);
+        ui.label(&self.packet_to_drill);*/
     }
     pub fn start(&mut self) {
         self.sniffer.capture();
@@ -93,7 +134,37 @@ impl LiveApp {
     }
 }
 
-pub struct Table {
+fn create_tree() -> egui_tiles::Tree<Pane> {
+    let mut tiles = egui_tiles::Tiles::default();
+
+    let mut tabs = vec![];
+
+    let first = Pane {
+        title: "Packets".into(),
+        module: Module::Packets(PacketTable::new()),
+    };
+
+    tabs.push({
+        let children = tiles.insert_pane(first);
+        tiles.insert_horizontal_tile(vec![children])
+    });
+
+    let second = Pane {
+        title: "Drill Down".into(),
+        module: Module::PacketDrill(Drilldown::new()),
+    };
+
+    tabs.push({
+        let children = tiles.insert_pane(second);
+        tiles.insert_horizontal_tile(vec![children])
+    });
+
+    let root = tiles.insert_tab_tile(tabs);
+
+    egui_tiles::Tree::new(root, tiles)
+}
+
+pub struct PacketTable {
     striped: bool,
     resizable: bool,
     //scroll_to_row_slider: usize,
@@ -101,7 +172,7 @@ pub struct Table {
     selected_packet: Option<i32>,
 }
 
-impl Table {
+impl PacketTable {
     pub fn new() -> Self {
         Self {
             striped: false,
@@ -112,8 +183,8 @@ impl Table {
     }
 }
 
-impl Table {
-    pub fn table_ui(&mut self, ui: &mut egui::Ui, data: &mut Vec<EthernetFrame>) {
+impl PacketTable {
+    pub fn render(&mut self, ui: &mut egui::Ui, data: &mut Vec<EthernetFrame>) {
         use egui_extras::{Column, TableBuilder};
         let mut table = TableBuilder::new(ui)
             .striped(self.striped)
@@ -188,6 +259,12 @@ impl Table {
                 });
             });
     }
+}
+
+pub enum Module{
+    Packets(PacketTable),
+    PacketDrill(Drilldown),
+    Payload
 }
 
 fn custom_panic_handler(info: &panic::PanicInfo) {
