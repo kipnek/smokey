@@ -1,6 +1,7 @@
 use crate::packets::packet_traits::Layer;
 use crate::packets::shared_objs::LayerData;
 use pnet::packet::Packet;
+use std::borrow::Cow;
 use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone, Default)]
@@ -62,12 +63,12 @@ malformed: {malformed}"
         LayerData::Data(&self.payload)
     }
 
-    fn source(&self) -> &dyn Display {
-        &self.header.source_port
+    fn source(&self) -> Cow<'_, str> {
+        Cow::from(self.header.source_port.to_string())
     }
 
-    fn destination(&self) -> &dyn Display {
-        &self.header.destination_port
+    fn destination(&self) -> Cow<'_, str> {
+        Cow::from(self.header.destination_port.to_string())
     }
 
     fn info(&self) -> String {

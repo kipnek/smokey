@@ -6,6 +6,7 @@ use pnet::packet::{
     ip::{IpNextHeaderProtocol, IpNextHeaderProtocols},
     ipv4::Ipv4OptionIterable,
 };
+use std::borrow::Cow;
 use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone)]
@@ -185,12 +186,12 @@ options: {options_string}"
         }
     }
 
-    fn source(&self) -> &dyn Display {
-        &self.header.source_address
+    fn source(&self) -> Cow<'_, str> {
+        Cow::from(&self.header.source_address)
     }
 
-    fn destination(&self) -> &dyn Display {
-        &self.header.destination_address
+    fn destination(&self) -> Cow<'_, str> {
+        Cow::from(&self.header.destination_address)
     }
 
     fn info(&self) -> String {

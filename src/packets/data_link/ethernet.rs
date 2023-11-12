@@ -6,6 +6,7 @@ use crate::packets::{
 use chrono::Utc;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
+use std::borrow::Cow;
 use std::fmt::{Display, Write};
 
 #[derive(Clone, Debug)]
@@ -69,12 +70,12 @@ EtherType: {}",
         }
     }
 
-    fn source(&self) -> &dyn Display {
-        &self.header.source_mac
+    fn source(&self) -> Cow<'_, str> {
+        Cow::from(&self.header.source_mac)
     }
 
-    fn destination(&self) -> &dyn Display {
-        &self.header.destination_mac
+    fn destination(&self) -> Cow<'_, str> {
+        Cow::from(&self.header.destination_mac)
     }
 
     fn info(&self) -> String {
