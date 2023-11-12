@@ -1,6 +1,3 @@
-//use cnote::gui::app::CaptureApp;
-//use iced::Application;
-
 use cnote::packets::data_link::ethernet::EthernetFrame;
 use cnote::packets::packet_traits::{Describable, Layer};
 use cnote::packets::shared_objs::LayerData;
@@ -8,9 +5,8 @@ use cnote::sniffer::Sniffer;
 use eframe;
 use eframe::Frame;
 use egui;
-use egui::{Context, ScrollArea, Ui, WidgetText};
+use egui::{Context, Ui, WidgetText};
 use egui_tiles::{Behavior, TileId, UiResponse};
-use std::panic;
 use std::time::Duration;
 
 fn main() -> Result<(), eframe::Error> {
@@ -55,7 +51,9 @@ impl eframe::App for Capture {
         }
         egui::SidePanel::left("tree").show(ctx, |ui| {
             if ui.button("Start").clicked() {
-                self.start();
+                if !self.running {
+                    self.start();
+                }
             }
             if ui.button("Stop").clicked() {
                 self.stop();
@@ -70,9 +68,6 @@ impl eframe::App for Capture {
             };
             self.tree.ui(&mut behavior, ui);
         });
-        /*egui::CentralPanel::default()
-        .frame(egui::Frame::dark_canvas(&ctx.style()))
-        .show(ctx, |ui| self.ui(ui));*/
     }
 }
 impl<'a> Behavior<Pane> for TreeBehavior<'a> {
@@ -138,27 +133,6 @@ impl Capture {
         if let Some(receiver) = self.sniffer.receiver.as_mut() {
             self.sniffer.captured_packets.extend(receiver.try_iter());
         }
-    }
-    pub fn ui(&mut self, ui: &mut Ui) {
-        /*if ui.button("Start").clicked() {
-            self.start();
-        }
-        if ui.button("Stop").clicked() {
-            self.stop();
-        }*/
-
-        /*ScrollArea::vertical().max_height(500.0).show(ui, |ui| {
-            self.table.render(ui, &mut self.sniffer.captured_packets);
-        });
-        if let Some(id) = self.table.selected_packet {
-            if let Some(packet) = self.sniffer.captured_packets.get(id as usize) {
-                let text = packet.get_long();
-                self.packet_to_drill = text;
-            }
-            self.table.selected_packet = None;
-        }
-
-        ui.label(&self.packet_to_drill);*/
     }
     pub fn start(&mut self) {
         self.sniffer.capture();
