@@ -212,6 +212,7 @@ impl PacketTable {
             .striped(self.striped)
             .resizable(self.resizable)
             .auto_shrink([false, true])
+            .stick_to_bottom(true)
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Column::auto())
             .column(Column::auto())
