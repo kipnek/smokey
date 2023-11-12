@@ -2,10 +2,8 @@ use cnote::packets::data_link::ethernet::EthernetFrame;
 use cnote::packets::packet_traits::{Describable, Layer};
 use cnote::packets::shared_objs::LayerData;
 use cnote::sniffer::Sniffer;
-use eframe;
 use eframe::Frame;
-use egui;
-use egui::{Context, Ui, WidgetText};
+use egui::{Context, Sense, Ui, WidgetText};
 use egui_tiles::{Behavior, TileId, UiResponse};
 use std::time::Duration;
 
@@ -72,6 +70,10 @@ impl eframe::App for Capture {
 }
 impl<'a> Behavior<Pane> for TreeBehavior<'a> {
     fn pane_ui(&mut self, ui: &mut Ui, _tile_id: TileId, pane: &mut Pane) -> UiResponse {
+        let dragged = ui
+            .add(egui::Button::new(&pane.title).sense(Sense::drag()))
+            .dragged();
+
         match pane.module.clone() {
             Module::Packets(mut table) => {
                 table.render(ui, self.captured_packets, self.selected_packet);
@@ -104,10 +106,6 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
             }
         }
 
-        let dragged = ui
-            .allocate_rect(ui.max_rect(), egui::Sense::drag())
-            .on_hover_cursor(egui::CursorIcon::Grab)
-            .dragged();
         if dragged {
             egui_tiles::UiResponse::DragStarted
         } else {
