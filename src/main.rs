@@ -107,7 +107,7 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
     }
 
     fn tab_title_for_pane(&mut self, pane: &Pane) -> WidgetText {
-        WidgetText::default()
+        pane.title.to_owned().into()
     }
 }
 
