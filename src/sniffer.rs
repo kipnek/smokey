@@ -5,13 +5,13 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread;
 
 #[derive(Default)]
-pub struct LiveCapture {
+pub struct Sniffer {
     pub interface: Option<Device>,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
 }
 
-impl LiveCapture {
+impl Sniffer {
     pub fn capture(&mut self) {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
