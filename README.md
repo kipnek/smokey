@@ -3,7 +3,7 @@ rust protocol analyzer (early dev)
 
 ## How it works
 
-##### if not Open Suse (or maybe other linux variations)
+#### if not Open Suse (or maybe other linux variations)
 first make sure rust is installed then clone the project then in the root of the 
 project
 ```cargo run```
@@ -12,8 +12,7 @@ and the basic window should show up.
 #### if OpenSuse (or maybe other linux variations)
 ```
 cargo build --release \
-&& sudo setcap cap_net_raw,cap_net_admin+eip target/release/cnote \
-&& systemd-run --scope -p MemoryMax=500M target/release/cnote
+&& sudo setcap cap_net_raw,cap_net_admin+eip target/release/cnote
 ```
 ### Supported protocols
 Ethernet, IPv4, UDP, and TCP right now
