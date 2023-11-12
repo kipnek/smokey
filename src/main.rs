@@ -74,8 +74,8 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
             .add(egui::Button::new(&pane.title).sense(Sense::drag()))
             .dragged();
 
-        match pane.module.clone() {
-            Module::Packets(mut table) => {
+        match pane.module {
+            Module::Packets(ref mut table) => {
                 table.render(ui, self.captured_packets, self.selected_packet);
             }
             Module::PacketDrill => {
