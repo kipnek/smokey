@@ -91,10 +91,19 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
             Module::Packets(mut table) => {
                 table.render(ui, &self.captured_packets);
             }
-            Module::PacketDrill(_) => {}
+            Module::PacketDrill(drill) => {}
             Module::Payload => {}
         }
-        UiResponse::None
+
+        let dragged = ui
+            .allocate_rect(ui.max_rect(), egui::Sense::drag())
+            .on_hover_cursor(egui::CursorIcon::Grab)
+            .dragged();
+        if dragged {
+            egui_tiles::UiResponse::DragStarted
+        } else {
+            egui_tiles::UiResponse::None
+        }
     }
 
     fn tab_title_for_pane(&mut self, pane: &Pane) -> WidgetText {
@@ -215,7 +224,6 @@ impl PacketTable {
         if let Some(row_nr) = self.scroll_to_row.take() {
             table = table.scroll_to_row(row_nr, None);
         }
-
         table
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -279,9 +287,4 @@ pub enum Module {
     Packets(PacketTable),
     PacketDrill(Drilldown),
     Payload,
-}
-
-fn custom_panic_handler(info: &panic::PanicInfo) {
-    // Handle the panic, e.g., log it or perform some cleanup.
-    println!("Panic occurred: {info:?}");
 }
