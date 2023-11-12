@@ -2,7 +2,8 @@
 //use iced::Application;
 
 use cnote::packets::data_link::ethernet::EthernetFrame;
-use cnote::packets::packet_traits::Describable;
+use cnote::packets::packet_traits::{Describable, Layer};
+use cnote::packets::shared_objs::LayerData;
 use cnote::sniffer::Sniffer;
 use eframe;
 use eframe::Frame;
@@ -32,30 +33,18 @@ pub struct Capture {
     pub running: bool,
     pub sniffer: Sniffer,
     pub tree: egui_tiles::Tree<Pane>,
+    pub selected_packet: Option<i32>,
 }
 struct TreeBehavior<'a> {
     captured_packets: &'a Vec<EthernetFrame>,
     drilldown: &'a String,
     payload: &'a Vec<u8>,
+    selected_packet: &'a mut Option<i32>,
 }
 #[derive(Clone)]
 pub struct Pane {
     title: String,
     module: Module,
-}
-
-#[derive(Clone)]
-pub struct Drilldown {
-    pub info: String,
-}
-
-impl Drilldown {
-    pub fn new() -> Self {
-        Self {
-            info: "".to_string(),
-        }
-    }
-    pub fn render() {}
 }
 
 impl eframe::App for Capture {
@@ -77,6 +66,7 @@ impl eframe::App for Capture {
                 captured_packets: &self.sniffer.captured_packets,
                 drilldown: &"".to_string(),
                 payload: &vec![],
+                selected_packet: &mut self.selected_packet,
             };
             self.tree.ui(&mut behavior, ui);
         });
@@ -89,10 +79,34 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
     fn pane_ui(&mut self, ui: &mut Ui, _tile_id: TileId, pane: &mut Pane) -> UiResponse {
         match pane.module.clone() {
             Module::Packets(mut table) => {
-                table.render(ui, &self.captured_packets);
+                table.render(ui, self.captured_packets, self.selected_packet);
             }
-            Module::PacketDrill(drill) => {}
-            Module::Payload => {}
+            Module::PacketDrill => {
+                if let Some(packet) =
+                    { *self.selected_packet }.and_then(|i| self.captured_packets.get(i as usize))
+                {
+                    ui.label(packet.get_long());
+                }
+            }
+            Module::Payload => {
+                if let Some(packet) =
+                    { *self.selected_packet }.and_then(|i| self.captured_packets.get(i as usize))
+                {
+                    let mut layer_data = packet.get_next();
+                    let payload = 'payload: loop {
+                        match layer_data {
+                            LayerData::Layer(layer) => {
+                                layer_data = layer.get_next();
+                            }
+                            LayerData::Data(payload) => {
+                                break 'payload payload;
+                            }
+                        }
+                    };
+
+                    ui.label("TODO: Payload here");
+                }
+            }
         }
 
         let dragged = ui
@@ -117,6 +131,7 @@ impl Capture {
             running: false,
             sniffer: Default::default(),
             tree: create_tree(),
+            selected_packet: None,
         }
     }
     pub fn get_packets(&mut self) {
@@ -172,7 +187,7 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
 
     let second = Pane {
         title: "Drill Down".into(),
-        module: Module::PacketDrill(Drilldown::new()),
+        module: Module::PacketDrill,
     };
 
     tabs.push({
@@ -191,7 +206,6 @@ pub struct PacketTable {
     resizable: bool,
     //scroll_to_row_slider: usize,
     scroll_to_row: Option<usize>,
-    selected_packet: Option<i32>,
 }
 
 impl PacketTable {
@@ -200,13 +214,17 @@ impl PacketTable {
             striped: false,
             resizable: false,
             scroll_to_row: None,
-            selected_packet: None,
         }
     }
 }
 
 impl PacketTable {
-    pub fn render(&mut self, ui: &mut egui::Ui, data: &Vec<EthernetFrame>) {
+    pub fn render(
+        &mut self,
+        ui: &mut egui::Ui,
+        data: &Vec<EthernetFrame>,
+        selected_packet: &mut Option<i32>,
+    ) {
         use egui_extras::{Column, TableBuilder};
         let mut table = TableBuilder::new(ui)
             .striped(self.striped)
@@ -247,36 +265,24 @@ impl PacketTable {
                 body.rows(18.0, data.len(), |index, mut row| {
                     let packet = &data[index];
                     let description = packet.get_description();
-                    row.col(|ui| {
-                        if ui.button(description.id.to_string()).clicked() {
-                            self.selected_packet = Some(description.id);
-                        }
-                    });
-                    row.col(|ui| {
-                        if ui.button(description.timestamp).clicked() {
-                            self.selected_packet = Some(description.id);
-                        }
-                    });
-                    row.col(|ui| {
-                        if ui
-                            .button(description.src_dest_layer.source().to_string())
-                            .clicked()
-                        {
-                            self.selected_packet = Some(description.id);
-                        }
-                    });
-                    row.col(|ui| {
-                        if ui
-                            .button(description.src_dest_layer.destination().to_string())
-                            .clicked()
-                        {
-                            self.selected_packet = Some(description.id);
-                        }
-                    });
-                    row.col(|ui| {
-                        if ui.button(description.info_layer.info()).clicked() {
-                            self.selected_packet = Some(description.id);
-                        }
+                    [
+                        description.id.to_string().as_str(),
+                        description.timestamp,
+                        description.src_dest_layer.source().to_string().as_str(),
+                        description
+                            .src_dest_layer
+                            .destination()
+                            .to_string()
+                            .as_str(),
+                        description.info_layer.info().as_str(),
+                    ]
+                    .into_iter()
+                    .for_each(|text| {
+                        row.col(|ui| {
+                            if ui.button(text).clicked() {
+                                *selected_packet = Some(description.id);
+                            }
+                        });
                     });
                 });
             });
@@ -286,6 +292,6 @@ impl PacketTable {
 #[derive(Clone)]
 pub enum Module {
     Packets(PacketTable),
-    PacketDrill(Drilldown),
+    PacketDrill,
     Payload,
 }
