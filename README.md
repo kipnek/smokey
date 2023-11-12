@@ -49,7 +49,7 @@ Each packet that implements layer handles the logic for the layer it encapsulate
 2. Logging - <br />
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0 %
 3. Set up basic gui - <br />
-⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0 %
+🔵🔵⬜⬜⬜⬜⬜⬜⬜⬜ 0 %
 4. Figure out how to handle 802.11 frame - <br />
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜ 0%
 4. Figure out how to highlight problem packets - <br />
