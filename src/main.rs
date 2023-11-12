@@ -145,27 +145,16 @@ impl Capture {
 fn create_tree() -> egui_tiles::Tree<Pane> {
     let mut tiles = egui_tiles::Tiles::default();
 
-    let mut tabs = vec![];
-
-    let first = Pane {
-        title: "Packets".into(),
-        module: Module::Packets(PacketTable::new()),
-    };
-
-    tabs.push({
-        let children = tiles.insert_pane(first);
-        tiles.insert_horizontal_tile(vec![children])
-    });
-
-    let second = Pane {
-        title: "Drill Down".into(),
-        module: Module::PacketDrill,
-    };
-
-    tabs.push({
-        let children = tiles.insert_pane(second);
-        tiles.insert_horizontal_tile(vec![children])
-    });
+    let tabs = vec![
+        tiles.insert_pane(Pane {
+            title: "Packets".into(),
+            module: Module::Packets(PacketTable::new()),
+        }),
+        tiles.insert_pane(Pane {
+            title: "Drill Down".into(),
+            module: Module::PacketDrill,
+        }),
+    ];
 
     let root = tiles.insert_tab_tile(tabs);
 
