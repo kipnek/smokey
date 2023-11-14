@@ -71,11 +71,11 @@ EtherType: {}",
     }
 
     fn source(&self) -> Cow<'_, str> {
-        Cow::from(&self.header.source_mac)
+        Cow::from(self.header.source_mac.to_string())
     }
 
     fn destination(&self) -> Cow<'_, str> {
-        Cow::from(&self.header.destination_mac)
+        Cow::from(self.header.source_mac.to_string())
     }
 
     fn info(&self) -> String {
