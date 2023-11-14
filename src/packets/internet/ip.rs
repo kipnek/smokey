@@ -187,11 +187,11 @@ options: {options_string}"
     }
 
     fn source(&self) -> Cow<'_, str> {
-        Cow::from(&self.header.source_address)
+        Cow::from(self.header.source_address.to_string())
     }
 
     fn destination(&self) -> Cow<'_, str> {
-        Cow::from(&self.header.destination_address)
+        Cow::from(self.header.destination_address.to_string())
     }
 
     fn info(&self) -> String {
