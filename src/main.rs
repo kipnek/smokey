@@ -30,9 +30,9 @@ pub struct Capture {
     pub selected_packet: Option<i32>,
 }
 struct TreeBehavior<'a> {
-    captured_packets: &'a Vec<EthernetFrame>,
-    drilldown: &'a String,
-    payload: &'a Vec<u8>,
+    captured_packets: &'a [EthernetFrame],
+    drilldown: &'a str,
+    payload: &'a [u8],
     selected_packet: &'a mut Option<i32>,
 }
 #[derive(Clone)]
@@ -60,8 +60,8 @@ impl eframe::App for Capture {
         egui::CentralPanel::default().show(ctx, |ui| {
             let mut behavior = TreeBehavior {
                 captured_packets: &self.sniffer.captured_packets,
-                drilldown: &"".to_string(),
-                payload: &vec![],
+                drilldown: "",
+                payload: &[],
                 selected_packet: &mut self.selected_packet,
             };
             self.tree.ui(&mut behavior, ui);
@@ -183,7 +183,7 @@ impl PacketTable {
     pub fn render(
         &mut self,
         ui: &mut egui::Ui,
-        data: &Vec<EthernetFrame>,
+        data: &[EthernetFrame],
         selected_packet: &mut Option<i32>,
     ) {
         use egui_extras::{Column, TableBuilder};

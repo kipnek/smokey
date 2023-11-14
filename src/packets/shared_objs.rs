@@ -14,14 +14,14 @@ pub struct Description<'a> {
 
 pub enum Data {
     Ethernet(EthernetFrame),
-    Other(Vec<u8>),
+    Other(Box<[u8]>),
 }
 
 #[derive(Debug)]
 pub enum Transport {
     UDP(UdpPacket),
     TCP(TcpPacket),
-    Other(Vec<u8>),
+    Other(Box<[u8]>),
 }
 pub enum Application {}
 // enum Physical {}
@@ -30,7 +30,7 @@ pub enum Application {}
 pub enum Network {
     IPv4(Ipv4Packet),
     // IPv6(Ipv6Packet),
-    Other(Vec<u8>),
+    Other(Box<[u8]>),
 }
 
 pub enum LayerData<'a> {
