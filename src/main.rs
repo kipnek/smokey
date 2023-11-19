@@ -1,10 +1,13 @@
+use chrono::prelude::*;
 use cnote::packets::data_link::ethernet::EthernetFrame;
 use cnote::packets::packet_traits::{Describable, Layer};
 use cnote::packets::shared_objs::LayerData;
 use cnote::sniffer::Sniffer;
 use eframe::Frame;
 use egui::{Context, Sense, Ui, WidgetText};
+use egui_plot::{Legend, Line, Plot, PlotPoints};
 use egui_tiles::{Behavior, TileId, UiResponse};
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 fn main() -> Result<(), eframe::Error> {
@@ -104,6 +107,36 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
                     ui.label("TODO: Payload here");
                 }
             }
+            Module::PacketGraph => {
+                let plot = Plot::new("lines")
+                    .legend(Legend::default())
+                    .include_y(0.0)
+                    .allow_boxed_zoom(false)
+                    .allow_double_click_reset(false)
+                    .allow_drag(false)
+                    .allow_scroll(false)
+                    .allow_zoom(false);
+
+                let mut distribution = BTreeMap::<i64, f64>::new();
+                for p in self.captured_packets.iter().rev() {
+                    let t = p.timestamp.parse::<DateTime<Utc>>().unwrap();
+
+                    *distribution.entry(t.timestamp()).or_default() += 1.0;
+                    if distribution.len() >= 12 {
+                        break;
+                    }
+                }
+                distribution.pop_first();
+                distribution.pop_last();
+
+                plot.show(ui, |plot_ui| {
+                    let iter = distribution
+                        .into_iter()
+                        .map(|(second, value)| [second as f64, value]);
+                    let series = PlotPoints::from_iter(iter);
+                    plot_ui.line(Line::new(series).fill(0.0));
+                });
+            }
         }
 
         if dragged {
@@ -154,6 +187,10 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
             title: "Drill Down".into(),
             module: Module::PacketDrill,
         }),
+        tiles.insert_pane(Pane {
+            title: "Graph".into(),
+            module: Module::PacketGraph,
+        }),
     ];
 
     let root = tiles.insert_tab_tile(tabs);
@@ -177,9 +214,7 @@ impl PacketTable {
             scroll_to_row: None,
         }
     }
-}
 
-impl PacketTable {
     pub fn render(
         &mut self,
         ui: &mut egui::Ui,
@@ -251,4 +286,5 @@ pub enum Module {
     Packets(PacketTable),
     PacketDrill,
     Payload,
+    PacketGraph,
 }
