@@ -48,7 +48,7 @@ impl eframe::App for Capture {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         if self.running {
             self.get_packets();
-            ctx.request_repaint_after(Duration::from_secs(1));
+            ctx.request_repaint_after(Duration::from_millis(100));
         }
         egui::SidePanel::left("tree").show(ctx, |ui| {
             if ui.button("Start").clicked() {
@@ -117,23 +117,23 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
                     .allow_scroll(false)
                     .allow_zoom(false);
 
-                let mut distribution = BTreeMap::<i64, f64>::new();
+                let mut distribution = BTreeMap::<i64, [f64; 2]>::new();
                 for p in self.captured_packets.iter().rev() {
-                    let t = p.timestamp.parse::<DateTime<Utc>>().unwrap();
+                    let ts = p.timestamp.parse::<DateTime<Utc>>().unwrap();
 
-                    *distribution.entry(t.timestamp()).or_default() += 1.0;
-                    if distribution.len() >= 12 {
+                    let ts = (ts.timestamp() as f64) + (ts.timestamp_subsec_micros() as f64) / 1e6;
+                    // Multiply each second by a number to get that many entries per second.
+                    distribution.entry((ts * 10.0) as i64).or_insert([ts, 0.0])[1] += 1.0;
+                    if distribution.len() >= (10 * 10 + 2) {
                         break;
                     }
                 }
+                // Get rid of first and last time periods so they don't shrink and grow as time goes on.
                 distribution.pop_first();
                 distribution.pop_last();
 
                 plot.show(ui, |plot_ui| {
-                    let iter = distribution
-                        .into_iter()
-                        .map(|(second, value)| [second as f64, value]);
-                    let series = PlotPoints::from_iter(iter);
+                    let series = PlotPoints::from_iter(distribution.into_values());
                     plot_ui.line(Line::new(series).fill(0.0));
                 });
             }
