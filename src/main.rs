@@ -8,6 +8,7 @@ use egui::{Context, Sense, Ui, WidgetText};
 use egui_plot::{Legend, Line, Plot, PlotPoints};
 use egui_tiles::{Behavior, TileId, UiResponse};
 use std::collections::BTreeMap;
+use std::io::Read;
 use std::time::Duration;
 
 fn main() -> Result<(), eframe::Error> {
@@ -103,8 +104,28 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
                             }
                         }
                     };
+                    let hex_string = payload
+                        .iter()
+                        .map(|byte| format!("{:02x} ", byte))
+                        .collect::<Vec<String>>()
+                        .join("");
+                    let string_data = String::from_utf8_lossy(&payload);
 
-                    ui.label("TODO: Payload here");
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                ui.label("Hex:");
+                                ui.set_max_width(250.0);
+                                ui.add(egui::Label::new(hex_string).wrap(true));
+                            });
+                            ui.add_space(20.0);
+                            ui.vertical(|ui| {
+                                ui.label("String Data:");
+                                ui.set_max_width(250.0);
+                                ui.add(egui::Label::new(string_data).wrap(true));
+                            });
+                        })
+                    });
                 }
             }
             Module::PacketGraph => {
@@ -190,6 +211,10 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
         tiles.insert_pane(Pane {
             title: "Graph".into(),
             module: Module::PacketGraph,
+        }),
+        tiles.insert_pane(Pane {
+            title: "Payload".into(),
+            module: Module::Payload,
         }),
     ];
 
