@@ -8,7 +8,6 @@ use egui::{Context, Sense, Ui, WidgetText};
 use egui_plot::{Legend, Line, Plot, PlotPoints};
 use egui_tiles::{Behavior, TileId, UiResponse};
 use std::collections::BTreeMap;
-use std::io::Read;
 use std::time::Duration;
 
 fn main() -> Result<(), eframe::Error> {
