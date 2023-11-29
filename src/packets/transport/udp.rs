@@ -39,7 +39,7 @@ impl UdpPacket {
 }
 
 impl Layer for UdpPacket {
-    fn append_summary(&self, target: &mut String) {
+    fn append_summary(&self) -> String {
         let UdpHeader {
             source_port,
             destination_port,
@@ -48,17 +48,18 @@ impl Layer for UdpPacket {
             malformed,
         } = &self.header;
 
-        let _ = write!(
-            target,
-            "protocol: udp
-source_port: {source_port}
+        format!(
+            "source_port: {source_port}
 destination_port: {destination_port}
 length: {length}
 checksum: {checksum}
 malformed: {malformed}"
-        );
+        )
     }
 
+    fn protocol(&self) -> Cow<'_, str> {
+        Cow::from("UDP")
+    }
     fn get_next(&self) -> LayerData {
         LayerData::Data(&self.payload)
     }
