@@ -4,10 +4,12 @@ use cnote::packets::packet_traits::{Describable, Layer};
 use cnote::packets::shared_objs::LayerData;
 use cnote::sniffer::Sniffer;
 use eframe::Frame;
-use egui::{Context, Sense, Ui, WidgetText};
+use egui::{Context, FontFamily::Monospace, RichText, Sense, Ui, WidgetText};
+use egui_extras::{Column, TableBuilder};
 use egui_plot::{Legend, Line, Plot, PlotPoints};
 use egui_tiles::{Behavior, TileId, UiResponse};
 use std::collections::BTreeMap;
+use std::fmt::Write;
 use std::time::Duration;
 
 fn main() -> Result<(), eframe::Error> {
@@ -103,28 +105,62 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
                             }
                         }
                     };
-                    let hex_string = payload
-                        .iter()
-                        .map(|byte| format!("{:02x} ", byte))
-                        .collect::<Vec<String>>()
-                        .join("");
-                    let string_data = String::from_utf8_lossy(&payload);
 
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            ui.vertical(|ui| {
-                                ui.label("Hex:");
-                                ui.set_max_width(250.0);
-                                ui.add(egui::Label::new(hex_string).wrap(true));
+                    TableBuilder::new(ui)
+                        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                        .column(Column::auto())
+                        .column(Column::auto())
+                        .column(Column::auto())
+                        .header(20.0, |mut header| {
+                            header.col(|ui| {
+                                ui.strong("Address:");
                             });
-                            ui.add_space(20.0);
-                            ui.vertical(|ui| {
-                                ui.label("String Data:");
-                                ui.set_max_width(250.0);
-                                ui.add(egui::Label::new(string_data).wrap(true));
+                            header.col(|ui| {
+                                ui.strong("Hex:");
+                            });
+                            header.col(|ui| {
+                                ui.strong("String Data:");
                             });
                         })
-                    });
+                        .body(|body| {
+                            let chunks = payload.chunks(16);
+                            body.rows(18.0, chunks.clone().count(), |index, mut row| {
+                                let chunk = chunks.clone().nth(index).unwrap();
+
+                                row.col(|ui| {
+                                    let address = format!("{index:07x}0:");
+                                    ui.label(RichText::new(address).family(Monospace));
+                                });
+
+                                row.col(|ui| {
+                                    let mut hex_string = String::new();
+                                    let mut crumbs = chunk.chunks(2);
+
+                                    // Write the first "crumb" separately,
+                                    for b in crumbs.next().unwrap().iter() {
+                                        write!(hex_string, "{b:02x}").unwrap();
+                                    }
+                                    // then write the following "crumbs" with a leading space
+                                    for crumb in crumbs {
+                                        write!(hex_string, " ").unwrap();
+                                        for b in crumb {
+                                            write!(hex_string, "{b:02x}").unwrap();
+                                        }
+                                    }
+
+                                    ui.label(RichText::new(hex_string).family(Monospace));
+                                });
+
+                                row.col(|ui| {
+                                    let string = { chunk.iter() }
+                                        .map(
+                                            |&b| if b.is_ascii_graphic() { b as char } else { '.' },
+                                        )
+                                        .collect::<String>();
+                                    ui.label(RichText::new(string).family(Monospace));
+                                });
+                            });
+                        });
                 }
             }
             Module::PacketGraph => {
@@ -245,7 +281,6 @@ impl PacketTable {
         data: &[EthernetFrame],
         selected_packet: &mut Option<i32>,
     ) {
-        use egui_extras::{Column, TableBuilder};
         let mut table = TableBuilder::new(ui)
             .striped(self.striped)
             .resizable(self.resizable)
