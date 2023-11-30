@@ -1,7 +1,6 @@
 use crate::gui;
-use crate::gui::packet_table::PacketTable;
+use crate::gui::panes::packet_table::PacketTable;
 use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::packet_traits::Describable;
 use egui::{Sense, Ui, WidgetText};
 use egui_tiles::{Behavior, TileId, UiResponse};
 
