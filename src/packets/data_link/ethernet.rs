@@ -87,12 +87,12 @@ EtherType: {}",
 }
 
 impl Describable for EthernetFrame {
-    fn get_long(&self) -> BTreeMap<String, String> {
+    fn get_long(&self) -> BTreeMap<Cow<'_, str>, String> {
         let mut map = BTreeMap::new();
-        map.insert(self.protocol().to_string(), self.append_summary());
+        map.insert(self.protocol(), self.append_summary());
         let mut layer_data = self.get_next();
         while let LayerData::Layer(layer) = layer_data {
-            map.insert(layer.protocol().to_string(), layer.append_summary());
+            map.insert(layer.protocol(), layer.append_summary());
             layer_data = layer.get_next();
         }
         map

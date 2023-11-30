@@ -19,7 +19,7 @@ pub trait Layer: Send + Sync + Debug {
 }
 
 pub trait Describable: Send + Sync + Debug + Layer {
-    fn get_long(&self) -> BTreeMap<String, String>;
+    fn get_long(&self) -> BTreeMap<Cow<'_, str>, String>;
 
     fn get_id(&self) -> i32;
 
