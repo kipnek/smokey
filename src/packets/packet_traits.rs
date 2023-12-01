@@ -1,15 +1,17 @@
 use crate::packets::shared_objs::{Description, LayerData};
-
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Display};
 
 pub trait Layer: Send + Sync + Debug {
-    fn append_summary(&self, target: &mut String);
+    fn append_summary(&self) -> String;
 
     fn get_next(&self) -> LayerData;
 
     fn source(&self) -> Cow<'_, str>;
     fn destination(&self) -> Cow<'_, str>;
+
+    fn protocol(&self) -> Cow<'_, str>;
 
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_owned()
@@ -17,7 +19,7 @@ pub trait Layer: Send + Sync + Debug {
 }
 
 pub trait Describable: Send + Sync + Debug + Layer {
-    fn get_long(&self) -> String;
+    fn get_long(&self) -> BTreeMap<Cow<'_, str>, String>;
 
     fn get_id(&self) -> i32;
 

@@ -7,6 +7,7 @@ use chrono::Utc;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::fmt::{Display, Write};
 
 #[derive(Clone, Debug)]
@@ -52,15 +53,13 @@ impl EthernetFrame {
 
 //trait impls
 impl Layer for EthernetFrame {
-    fn append_summary(&self, target: &mut String) {
-        let _ = write!(
-            target,
-            "protocol: ethernet
-Source Mac: {}
+    fn append_summary(&self) -> String {
+        format!(
+            "Source Mac: {}
 Destination Mac: {}
 EtherType: {}",
             self.header.source_mac, self.header.destination_mac, self.header.ether_type,
-        );
+        )
     }
 
     fn get_next(&self) -> LayerData {
@@ -68,6 +67,10 @@ EtherType: {}",
             Network::IPv4(x) => LayerData::Layer(x as _),
             Network::Other(x) => LayerData::Data(x),
         }
+    }
+
+    fn protocol(&self) -> Cow<'_, str> {
+        Cow::from("Ethernet")
     }
 
     fn source(&self) -> Cow<'_, str> {
@@ -84,18 +87,15 @@ EtherType: {}",
 }
 
 impl Describable for EthernetFrame {
-    fn get_long(&self) -> String {
-        let mut ret = String::new();
-        self.append_summary(&mut ret);
-
+    fn get_long(&self) -> BTreeMap<Cow<'_, str>, String> {
+        let mut map = BTreeMap::new();
+        map.insert(self.protocol(), self.append_summary());
         let mut layer_data = self.get_next();
         while let LayerData::Layer(layer) = layer_data {
-            ret.push_str("\n\n");
-            layer.append_summary(&mut ret);
+            map.insert(layer.protocol(), layer.append_summary());
             layer_data = layer.get_next();
         }
-
-        ret
+        map
     }
 
     fn get_id(&self) -> i32 {

@@ -70,7 +70,7 @@ impl TcpPacket {
 }
 
 impl Layer for TcpPacket {
-    fn append_summary(&self, target: &mut String) {
+    fn append_summary(&self) -> String {
         let TcpHeader {
             source_port,
             destination_port,
@@ -92,20 +92,20 @@ impl Layer for TcpPacket {
         } = &self.header;
         let [urg, ack, psh, rst, syn, fin] = [*urg, *ack, *psh, *rst, *syn, *fin].map(u8::from);
 
-        let _ = write!(
-            target,
-            "protocol: tcp,
-source_port: {source_port}
+        format!(
+            "source_port: {source_port}
 destination_port: {destination_port}
 acknowledgment_number: {acknowledgment_number}
 data_offset_reserved_flags: {data_offset_reserved_flags}
 window_size: {window_size}
 checksum: {checksum}
 urgent_pointer: {urgent_pointer}
-flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}"
-        );
+flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {urg}"
+        )
     }
-
+    fn protocol(&self) -> Cow<'_, str> {
+        Cow::from("TCP")
+    }
     fn get_next(&self) -> LayerData {
         LayerData::Data(&self.payload)
     }

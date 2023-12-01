@@ -132,7 +132,7 @@ impl Ipv4Packet {
 }
 
 impl Layer for Ipv4Packet {
-    fn append_summary(&self, target: &mut String) {
+    fn append_summary(&self) -> String {
         let Ipv4Header {
             version_ihl,
             dscp,
@@ -159,10 +159,8 @@ impl Layer for Ipv4Packet {
             .collect::<Vec<&str>>()
             .join("\n");
 
-        let _ = write!(
-            target,
-            "protocol: ipv4
-version: {version_ihl}
+        format!(
+            "version: {version_ihl}
 dscp: {dscp}
 ecn: {ecn}
 total_length: {total_length}
@@ -175,7 +173,10 @@ destination_address: {destination_address}
 next_header: protocol : {next_header}
 flags: reserved : {reserved}, dont fragment : {dontfrag},  more fragment : {morefrag}
 options: {options_string}"
-        );
+        )
+    }
+    fn protocol(&self) -> Cow<'_, str> {
+        Cow::from("IPv4")
     }
 
     fn get_next(&self) -> LayerData {
