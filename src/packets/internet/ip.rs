@@ -132,7 +132,7 @@ impl Ipv4Packet {
 }
 
 impl Layer for Ipv4Packet {
-    fn append_summary(&self) -> String {
+    fn get_summary(&self) -> String {
         let Ipv4Header {
             version_ihl,
             dscp,

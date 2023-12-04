@@ -1,6 +1,6 @@
-use egui_extras::{Column, TableBuilder};
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::packet_traits::Describable;
+use egui_extras::{Column, TableBuilder};
 
 #[derive(Clone)]
 pub struct PacketTable {
@@ -41,6 +41,7 @@ impl PacketTable {
         if let Some(row_nr) = self.scroll_to_row.take() {
             table = table.scroll_to_row(row_nr, None);
         }
+
         table
             .header(20.0, |mut header| {
                 header.col(|ui| {
