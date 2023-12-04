@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::fmt::{Debug, Display};
 
 pub trait Layer: Send + Sync + Debug {
-    fn append_summary(&self) -> String;
+    fn get_summary(&self) -> String;
 
     fn get_next(&self) -> LayerData;
 

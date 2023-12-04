@@ -70,7 +70,7 @@ impl TcpPacket {
 }
 
 impl Layer for TcpPacket {
-    fn append_summary(&self) -> String {
+    fn get_summary(&self) -> String {
         let TcpHeader {
             source_port,
             destination_port,

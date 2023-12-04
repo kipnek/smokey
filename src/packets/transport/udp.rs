@@ -39,7 +39,7 @@ impl UdpPacket {
 }
 
 impl Layer for UdpPacket {
-    fn append_summary(&self) -> String {
+    fn get_summary(&self) -> String {
         let UdpHeader {
             source_port,
             destination_port,

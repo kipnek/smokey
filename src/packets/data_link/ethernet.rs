@@ -53,7 +53,7 @@ impl EthernetFrame {
 
 //trait impls
 impl Layer for EthernetFrame {
-    fn append_summary(&self) -> String {
+    fn get_summary(&self) -> String {
         format!(
             "Source Mac: {}
 Destination Mac: {}
@@ -89,10 +89,10 @@ EtherType: {}",
 impl Describable for EthernetFrame {
     fn get_long(&self) -> BTreeMap<Cow<'_, str>, String> {
         let mut map = BTreeMap::new();
-        map.insert(self.protocol(), self.append_summary());
+        map.insert(self.protocol(), self.get_summary());
         let mut layer_data = self.get_next();
         while let LayerData::Layer(layer) = layer_data {
-            map.insert(layer.protocol(), layer.append_summary());
+            map.insert(layer.protocol(), layer.get_summary());
             layer_data = layer.get_next();
         }
         map
