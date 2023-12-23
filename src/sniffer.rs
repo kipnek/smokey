@@ -48,6 +48,24 @@ impl Sniffer {
         });
     }
 
+    pub fn from_file(&mut self, path: String) {
+        let (sender, receiver) = mpsc::channel();
+        self.receiver = Some(receiver);
+
+        thread::spawn(move || {
+            let mut index = 0;
+            if let Ok(mut cap) = pcap::Capture::from_file(path) {
+                while let Ok(packet) = cap.next_packet() {
+                    let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
+                        continue;
+                    };
+                    let result = sender.send(eth_frame);
+                    index += 1;
+                }
+            }
+        });
+    }
+
     pub fn stop(&mut self) {
         println!("stopped");
         self.receiver = None;
