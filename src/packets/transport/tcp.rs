@@ -1,4 +1,8 @@
+use crate::packets::packet_traits::Layer;
+use crate::packets::shared_objs::LayerData;
 use pnet::packet::Packet;
+use std::borrow::Cow;
+use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
@@ -62,5 +66,62 @@ impl TcpPacket {
             header,
             payload: packet.payload().to_vec().into_boxed_slice(),
         })
+    }
+}
+
+impl Layer for TcpPacket {
+    fn get_summary(&self) -> String {
+        let TcpHeader {
+            source_port,
+            destination_port,
+            sequence_number: _,
+            acknowledgment_number,
+            data_offset_reserved_flags,
+            window_size,
+            checksum,
+            urgent_pointer,
+            flags:
+                TcpFlags {
+                    urg,
+                    ack,
+                    psh,
+                    rst,
+                    syn,
+                    fin,
+                },
+        } = &self.header;
+        let [urg, ack, psh, rst, syn, fin] = [*urg, *ack, *psh, *rst, *syn, *fin].map(u8::from);
+
+        format!(
+            "source_port: {source_port}
+destination_port: {destination_port}
+acknowledgment_number: {acknowledgment_number}
+data_offset_reserved_flags: {data_offset_reserved_flags}
+window_size: {window_size}
+checksum: {checksum}
+urgent_pointer: {urgent_pointer}
+flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {urg}"
+        )
+    }
+    fn protocol(&self) -> Cow<'_, str> {
+        Cow::from("TCP")
+    }
+    fn get_next(&self) -> LayerData {
+        LayerData::Data(&self.payload)
+    }
+
+    fn source(&self) -> Cow<'_, str> {
+        Cow::from(self.header.source_port.to_string())
+    }
+
+    fn destination(&self) -> Cow<'_, str> {
+        Cow::from(self.header.destination_port.to_string())
+    }
+
+    fn info(&self) -> String {
+        format!(
+            "TCP Source Port {} -> Destination {}",
+            self.header.source_port, self.header.destination_port
+        )
     }
 }

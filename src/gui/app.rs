@@ -10,7 +10,6 @@ use std::time::Duration;
 pub struct Capture {
     pub running: bool,
     pub sniffer: Sniffer,
-    pub from_file: bool,
     pub pcap_file: Option<String>,
     pub tree: egui_tiles::Tree<Pane>,
     pub selected_packet: Option<i32>,
@@ -26,7 +25,7 @@ impl eframe::App for Capture {
             ui.horizontal(|ui| {
                 if ui.button("Start").clicked() {
                     if !self.running {
-                        self.start(false);
+                        self.start(None);
                     }
                 }
                 if ui.button("Stop").clicked() {
@@ -39,15 +38,11 @@ impl eframe::App for Capture {
                         .pick_file()
                     {
                         self.pcap_file = Some(path.to_string_lossy().to_string());
-                    }
-                }
-                if ui.button("Open").clicked() {
-                    if !self.running {
-                        self.start(true);
+                        self.start(Some(path.to_string_lossy().to_string()))
                     }
                 }
                 if let Some(ref path) = self.pcap_file {
-                    ui.label(&format!("pcap : {}", path));
+                    ui.label(format!("pcap file: {}", &path));
                 }
             });
         });
@@ -69,7 +64,6 @@ impl Capture {
             sniffer: Default::default(),
             tree: create_tree(),
             selected_packet: None,
-            from_file: false,
             pcap_file: None,
         }
     }
@@ -78,11 +72,11 @@ impl Capture {
             self.sniffer.captured_packets.extend(receiver.try_iter());
         }
     }
-    pub fn start(&mut self, from_file: bool) {
-        if !from_file {
+    pub fn start(&mut self, file: Option<String>) {
+        if file.is_none() {
             self.sniffer.capture();
         } else {
-            self.sniffer.from_file(self.pcap_file.clone().unwrap())
+            self.sniffer.from_file(file.unwrap())
         }
         self.running = true;
     }
