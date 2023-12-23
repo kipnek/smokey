@@ -2,7 +2,6 @@ use crate::packets::packet_traits::Layer;
 use crate::packets::shared_objs::LayerData;
 use pnet::packet::Packet;
 use std::borrow::Cow;
-use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {

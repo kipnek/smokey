@@ -26,6 +26,12 @@ pub trait Describable: Send + Sync + Debug + Layer {
     fn get_description(&self) -> Description<'_>;
 }
 
+pub trait AppLayer: Send + Sync + Debug {
+    fn get_summary(&self) -> String;
+    fn info(&self) -> String;
+    fn protocol(&self) -> Cow<'_, str>;
+}
+
 /*
 If you want to filter or search packets based on specific criteria like port or
 address, you would generally implement accessor methods in the Layer trait and

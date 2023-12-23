@@ -1,5 +1,4 @@
-use crate::gui::pane_tree::{create_tree, Module, Pane, TreeBehavior};
-use crate::packets::data_link::ethernet::EthernetFrame;
+use crate::gui::pane_tree::{create_tree, Pane, TreeBehavior};
 use crate::sniffer::Sniffer;
 use eframe::Frame;
 use egui::Context;

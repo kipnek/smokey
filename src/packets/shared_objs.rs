@@ -1,8 +1,13 @@
+use crate::packets::application::http_request::HttpRequest;
+use crate::packets::application::http_response::HttpResponse;
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::internet::ip::Ipv4Packet;
 use crate::packets::packet_traits::Layer;
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
+
+use super::application::dns::DnsMessage;
+use super::packet_traits::AppLayer;
 
 #[derive(Debug, Clone)]
 pub struct Description<'a> {
@@ -23,7 +28,12 @@ pub enum Transport {
     TCP(TcpPacket),
     Other(Box<[u8]>),
 }
-pub enum Application {}
+pub enum Application {
+    HttpRequest(HttpRequest),
+    HttpResponse(HttpResponse),
+    Dns(DnsMessage),
+    Other(Box<[u8]>),
+}
 // enum Physical {}
 
 #[derive(Debug)]
@@ -35,5 +45,6 @@ pub enum Network {
 
 pub enum LayerData<'a> {
     Layer(&'a dyn Layer),
+    Application(&'a dyn AppLayer),
     Data(&'a [u8]),
 }
