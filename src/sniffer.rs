@@ -2,20 +2,20 @@ use crate::packets::data_link::ethernet::EthernetFrame;
 //use iced::Error;
 use pcap::Device;
 use std::sync::mpsc::{self, Receiver};
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 #[derive(Default)]
 pub struct Sniffer {
     pub interface: Option<Device>,
     pub receiver: Option<Receiver<EthernetFrame>>,
     pub captured_packets: Vec<EthernetFrame>,
+    pub file_handle: Option<JoinHandle<()>>,
 }
 
 impl Sniffer {
     pub fn capture(&mut self) {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
-        //let interface = self.interface.clone();
         let interface = Some(Device::lookup().unwrap().unwrap());
         thread::spawn(move || {
             let mut index = 0;
@@ -52,22 +52,23 @@ impl Sniffer {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
 
-        thread::spawn(move || {
+        let handle = thread::spawn(move || {
             let mut index = 0;
             if let Ok(mut cap) = pcap::Capture::from_file(path) {
                 while let Ok(packet) = cap.next_packet() {
                     let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
                         continue;
                     };
-                    let result = sender.send(eth_frame);
+                    let _ = sender.send(eth_frame);
                     index += 1;
                 }
             }
         });
+        self.file_handle = Some(handle);
     }
 
     pub fn stop(&mut self) {
-        println!("stopped");
+        self.file_handle = None;
         self.receiver = None;
     }
 
