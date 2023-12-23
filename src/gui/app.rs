@@ -1,9 +1,7 @@
-use crate::gui::pane_tree::{create_tree, Module, Pane, TreeBehavior};
-use crate::packets::data_link::ethernet::EthernetFrame;
+use crate::gui::pane_tree::{create_tree, Pane, TreeBehavior};
 use crate::sniffer::Sniffer;
 use eframe::Frame;
 use egui::Context;
-use rfd::*;
 use std::time::Duration;
 
 //use for separating out stuff
@@ -16,15 +14,21 @@ pub struct Capture {
 }
 
 impl eframe::App for Capture {
-    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         if self.running {
             self.get_packets();
-            ctx.request_repaint_after(Duration::from_millis(100));
+            if let Some(handle) = self.sniffer.file_handle.as_ref() {
+                if handle.is_finished() {
+                    self.stop();
+                }
+            }
         }
+        ctx.request_repaint_after(Duration::from_millis(100));
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Start").clicked() {
-                    if !self.running {
+                    if self.sniffer.receiver.is_none() {
+                        self.pcap_file = None;
                         self.start(None);
                     }
                 }
@@ -73,10 +77,11 @@ impl Capture {
         }
     }
     pub fn start(&mut self, file: Option<String>) {
+        self.sniffer.captured_packets = vec![];
         if file.is_none() {
             self.sniffer.capture();
         } else {
-            self.sniffer.from_file(file.unwrap())
+            self.sniffer.from_file(file.unwrap());
         }
         self.running = true;
     }
