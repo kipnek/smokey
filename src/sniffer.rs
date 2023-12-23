@@ -60,10 +60,6 @@ impl Sniffer {
                         continue;
                     };
                     let result = sender.send(eth_frame);
-                    if result.is_err() {
-                        // receiver was dropped
-                        break;
-                    }
                     index += 1;
                 }
             }
