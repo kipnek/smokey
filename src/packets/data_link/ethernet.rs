@@ -1,4 +1,5 @@
 use crate::packets::packet_traits::{Describable, Layer};
+use crate::packets::shared_objs::Protocol;
 use crate::packets::{
     internet::ip::Ipv4Packet,
     shared_objs::{Description, LayerData, Network},
@@ -68,8 +69,8 @@ EtherType: {}",
         }
     }
 
-    fn protocol(&self) -> Cow<'_, str> {
-        Cow::from("Ethernet")
+    fn protocol(&self) -> Protocol {
+        Protocol::Ethernet
     }
 
     fn source(&self) -> Cow<'_, str> {
@@ -86,13 +87,18 @@ EtherType: {}",
 }
 
 impl Describable for EthernetFrame {
-    fn get_long(&self) -> BTreeMap<Cow<'_, str>, String> {
+    fn get_long(&self) -> BTreeMap<Protocol, String> {
         let mut map = BTreeMap::new();
         map.insert(self.protocol(), self.get_summary());
         let mut layer_data = self.get_next();
         while let LayerData::Layer(layer) = layer_data {
             map.insert(layer.protocol(), layer.get_summary());
             layer_data = layer.get_next();
+        }
+        match layer_data {
+            LayerData::Layer(_) => {}
+            LayerData::Application(app) => todo!(),
+            LayerData::Data(_) => {}
         }
         map
     }

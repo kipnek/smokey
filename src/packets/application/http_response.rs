@@ -1,1 +1,2 @@
-pub struct HttpResponse{}
+#[derive(Debug, Clone)]
+pub struct HttpResponse {}

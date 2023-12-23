@@ -14,6 +14,18 @@ and the basic window should show up.
 cargo build --release \
 && sudo setcap cap_net_raw,cap_net_admin+eip target/release/cnote
 ```
+#### if in Pop!_Os (in the cnote directory)
+```
+cargo build --release
+sudo ./target/release/cnote
+```
+
+If you are linux, you may have to install the following dependencies:
+```
+dbus-x11
+libgtk-3-dev
+```
+
 ### Supported protocols
 Ethernet, IPv4, UDP, and TCP right now
 

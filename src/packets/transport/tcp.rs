@@ -1,5 +1,6 @@
+use crate::packets::application::app_parser::parse_app_layer;
 use crate::packets::packet_traits::Layer;
-use crate::packets::shared_objs::LayerData;
+use crate::packets::shared_objs::{Application, LayerData, Protocol};
 use pnet::packet::Packet;
 use std::borrow::Cow;
 
@@ -39,10 +40,10 @@ impl TcpHeader {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct TcpPacket {
     pub header: TcpHeader,
-    pub payload: Box<[u8]>,
+    pub payload: Application,
 }
 
 impl TcpPacket {
@@ -61,10 +62,9 @@ impl TcpPacket {
             flags: TcpHeader::set_tcp_flags(packet.get_flags()),
         };
 
-        Some(TcpPacket {
-            header,
-            payload: packet.payload().to_vec().into_boxed_slice(),
-        })
+        let payload = parse_app_layer(packet.payload());
+
+        Some(TcpPacket { header, payload })
     }
 }
 
@@ -102,11 +102,17 @@ urgent_pointer: {urgent_pointer}
 flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {urg}"
         )
     }
-    fn protocol(&self) -> Cow<'_, str> {
-        Cow::from("TCP")
+    fn protocol(&self) -> Protocol {
+        Protocol::TCP
     }
     fn get_next(&self) -> LayerData {
-        LayerData::Data(&self.payload)
+        match &self.payload {
+            Application::HttpRequest(_) => todo!(),
+            Application::HttpResponse(_) => todo!(),
+            Application::Dns(_) => todo!(),
+            Application::Other(_) => todo!(),
+            Application::Tls(_) => todo!(),
+        }
     }
 
     fn source(&self) -> Cow<'_, str> {
