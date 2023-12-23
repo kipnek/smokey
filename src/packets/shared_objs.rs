@@ -1,13 +1,15 @@
-use crate::packets::application::http_request::HttpRequest;
-use crate::packets::application::http_response::HttpResponse;
+use std::fmt;
+use std::path::Display;
+
+use super::packet_traits::AppLayer;
+use crate::packets::application::{
+    dns::DnsMessage, http_request::HttpRequest, http_response::HttpResponse, tls::Tls,
+};
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::internet::ip::Ipv4Packet;
 use crate::packets::packet_traits::Layer;
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
-
-use super::application::dns::DnsMessage;
-use super::packet_traits::AppLayer;
 
 #[derive(Debug, Clone)]
 pub struct Description<'a> {
@@ -28,10 +30,12 @@ pub enum Transport {
     TCP(TcpPacket),
     Other(Box<[u8]>),
 }
+#[derive(Debug, Clone)]
 pub enum Application {
     HttpRequest(HttpRequest),
     HttpResponse(HttpResponse),
     Dns(DnsMessage),
+    Tls(Tls),
     Other(Box<[u8]>),
 }
 // enum Physical {}
@@ -47,4 +51,30 @@ pub enum LayerData<'a> {
     Layer(&'a dyn Layer),
     Application(&'a dyn AppLayer),
     Data(&'a [u8]),
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Protocol {
+    Ethernet,
+    IPv4,
+    IPv6,
+    TCP,
+    UDP,
+    DNS,
+    HTTP,
+    TLS,
+}
+impl fmt::Display for Protocol {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Protocol::Ethernet => write!(f, "Ethernet"),
+            Protocol::IPv4 => write!(f, "IPv4"),
+            Protocol::IPv6 => write!(f, "IPv6"),
+            Protocol::TCP => write!(f, "Tcp"),
+            Protocol::UDP => write!(f, "Udp"),
+            Protocol::DNS => write!(f, "Dns"),
+            Protocol::HTTP => write!(f, "Http"),
+            Protocol::TLS => write!(f, "Tls"),
+        }
+    }
 }

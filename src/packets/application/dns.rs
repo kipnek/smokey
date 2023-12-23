@@ -1,11 +1,9 @@
 use std::borrow::Cow;
 
+use crate::packets::packet_traits::AppLayer;
 use trust_dns_proto::op::{Header, Message, MessageParts, Query};
 use trust_dns_proto::rr::Record;
 use trust_dns_proto::serialize::binary::BinDecodable;
-
-use crate::packets::packet_traits::Layer;
-use crate::packets::shared_objs::LayerData;
 
 #[derive(Debug, Clone)]
 pub struct DnsMessage {
@@ -17,7 +15,6 @@ pub struct DnsMessage {
 impl DnsMessage {
     pub fn new(dns_message: Message) -> DnsMessage {
         let dns_message = MessageParts::from(dns_message);
-
         DnsMessage {
             header: dns_message.header,
             questions: dns_message.queries,
@@ -40,24 +37,16 @@ fn parse_dns_message(data: &[u8]) -> Result<Message, trust_dns_proto::error::Pro
     Ok(dns_message)
 }
 
-impl Layer for DnsMessage {
+/*impl AppLayer for DnsMessage {
     fn get_summary(&self) -> String {
         todo!()
     }
 
-    fn get_next(&self) -> LayerData {
-        LayerData::Data(&[0])
+    fn info(&self) -> String {
+        format!()
     }
 
-    fn source(&self) -> std::borrow::Cow<'_, str> {
-        Cow::from("none")
-    }
-
-    fn destination(&self) -> std::borrow::Cow<'_, str> {
-        Cow::from("none")
-    }
-
-    fn protocol(&self) -> std::borrow::Cow<'_, str> {
+    fn protocol(&self) -> Cow<'_, str> {
         Cow::from("dns")
     }
-}
+}*/
