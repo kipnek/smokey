@@ -95,6 +95,11 @@ impl Describable for EthernetFrame {
             map.insert(layer.protocol(), layer.get_summary());
             layer_data = layer.get_next();
         }
+        match layer_data {
+            LayerData::Layer(_) => {}
+            LayerData::Application(app) => todo!(),
+            LayerData::Data(_) => {}
+        }
         map
     }
 
