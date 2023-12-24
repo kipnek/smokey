@@ -16,7 +16,7 @@ pub struct Description<'a> {
     pub id: i32,
     pub timestamp: &'a str,
     pub src_dest_layer: &'a dyn Layer,
-    pub info_layer: &'a dyn Layer,
+    pub info_layer: LayerData<'a>,
 }
 
 pub enum Data {
@@ -32,10 +32,10 @@ pub enum Transport {
 }
 #[derive(Debug, Clone)]
 pub enum Application {
-    HttpRequest(HttpRequest),
-    HttpResponse(HttpResponse),
+    //HttpRequest(HttpRequest),
+    //HttpResponse(HttpResponse),
     Dns(DnsMessage),
-    Tls(Tls),
+    //Tls(Tls),
     Other(Box<[u8]>),
 }
 // enum Physical {}
@@ -47,6 +47,7 @@ pub enum Network {
     Other(Box<[u8]>),
 }
 
+#[derive(Debug, Clone)]
 pub enum LayerData<'a> {
     Layer(&'a dyn Layer),
     Application(&'a dyn AppLayer),

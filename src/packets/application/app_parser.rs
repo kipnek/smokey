@@ -1,4 +1,4 @@
-use crate::packets::shared_objs::{Application, LayerData};
+use crate::packets::shared_objs::Application;
 
 use super::dns::DnsMessage;
 

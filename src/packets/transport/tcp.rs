@@ -107,11 +107,11 @@ flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {u
     }
     fn get_next(&self) -> LayerData {
         match &self.payload {
-            Application::HttpRequest(_) => todo!(),
-            Application::HttpResponse(_) => todo!(),
-            Application::Dns(_) => todo!(),
-            Application::Other(_) => todo!(),
-            Application::Tls(_) => todo!(),
+            //Application::HttpRequest(d) => {},
+            //Application::HttpResponse(d) => {},
+            Application::Dns(dns_message) => LayerData::Application(dns_message),
+            Application::Other(bytes) => LayerData::Data(&bytes),
+            //Application::Tls(_) => todo!(),
         }
     }
 

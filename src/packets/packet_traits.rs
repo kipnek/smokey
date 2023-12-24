@@ -20,18 +20,30 @@ pub trait Layer: Send + Sync + Debug {
     }
 }
 
+pub trait AppLayer: Send + Sync + Debug {
+    fn get_summary(&self) -> String;
+
+    fn source(&self) -> Cow<'_, str> {
+        Cow::from("na")
+    }
+
+    fn destination(&self) -> Cow<'_, str> {
+        Cow::from("na")
+    }
+
+    fn protocol(&self) -> Protocol;
+
+    fn info(&self) -> String {
+        "Unknown protocol, info not available".to_owned()
+    }
+}
+
 pub trait Describable: Send + Sync + Debug + Layer {
     fn get_long(&self) -> BTreeMap<Protocol, String>;
 
     fn get_id(&self) -> i32;
 
     fn get_description(&self) -> Description<'_>;
-}
-
-pub trait AppLayer: Send + Sync + Debug {
-    fn get_summary(&self) -> String;
-    fn info(&self) -> String;
-    fn protocol(&self) -> Cow<'_, str>;
 }
 
 /*

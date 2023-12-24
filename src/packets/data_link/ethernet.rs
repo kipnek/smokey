@@ -1,3 +1,4 @@
+use crate::gui::app;
 use crate::packets::packet_traits::{Describable, Layer};
 use crate::packets::shared_objs::Protocol;
 use crate::packets::{
@@ -97,7 +98,9 @@ impl Describable for EthernetFrame {
         }
         match layer_data {
             LayerData::Layer(_) => {}
-            LayerData::Application(app) => todo!(),
+            LayerData::Application(app) => {
+                map.insert(app.protocol(), app.get_summary());
+            }
             LayerData::Data(_) => {}
         }
         map
@@ -113,7 +116,7 @@ impl Describable for EthernetFrame {
             _ => self as _,
         };
 
-        let innermost_layer: &dyn Layer = get_innermost_layer(self);
+        let innermost_layer: LayerData<'_> = get_innermost_layer(LayerData::Layer(self));
 
         Description {
             id: self.id,
@@ -124,11 +127,23 @@ impl Describable for EthernetFrame {
     }
 }
 
-// helper functions
+// helper function
+fn get_innermost_layer<'a>(mut layer: LayerData<'a>) -> LayerData<'a> {
+    let mut last_layer: Option<&'a dyn Layer> = None;
 
-fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
-    while let LayerData::Layer(next) = layer.get_next() {
-        layer = next;
+    while let LayerData::Layer(current_layer) = layer {
+        last_layer = Some(current_layer);
+        layer = current_layer.get_next();
     }
-    layer
+
+    match layer {
+        LayerData::Data(_) => {
+            if let Some(last) = last_layer {
+                LayerData::Layer(last)
+            } else {
+                LayerData::Data(&[])
+            }
+        }
+        _ => layer,
+    }
 }

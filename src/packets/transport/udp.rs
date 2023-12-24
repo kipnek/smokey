@@ -61,11 +61,10 @@ malformed: {malformed}"
     }
     fn get_next(&self) -> LayerData {
         match &self.payload {
-            Application::HttpRequest(_) => todo!(),
-            Application::HttpResponse(_) => todo!(),
-            Application::Dns(_) => todo!(),
-            Application::Other(x) => LayerData::Data(x),
-            Application::Tls(_) => todo!(),
+            //Application::HttpRequest(_) => todo!(),
+            //Application::HttpResponse(_) => todo!(),
+            Application::Dns(dns_message) => LayerData::Application(dns_message),
+            Application::Other(bytes) => LayerData::Data(bytes), //Application::Tls(_) => todo!(),
         }
     }
 

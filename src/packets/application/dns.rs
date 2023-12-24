@@ -1,7 +1,9 @@
+use core::fmt;
 use std::borrow::Cow;
 
 use crate::packets::packet_traits::AppLayer;
-use trust_dns_proto::op::{Header, Message, MessageParts, Query};
+use crate::packets::shared_objs::Protocol;
+use trust_dns_proto::op::{op_code, Header, Message, MessageParts, MessageType, Query};
 use trust_dns_proto::rr::Record;
 use trust_dns_proto::serialize::binary::BinDecodable;
 
@@ -37,16 +39,40 @@ fn parse_dns_message(data: &[u8]) -> Result<Message, trust_dns_proto::error::Pro
     Ok(dns_message)
 }
 
-/*impl AppLayer for DnsMessage {
+impl AppLayer for DnsMessage {
     fn get_summary(&self) -> String {
-        todo!()
+        format!("")
+    }
+
+    fn protocol(&self) -> Protocol {
+        Protocol::DNS
     }
 
     fn info(&self) -> String {
-        format!()
+        format!("dns")
     }
+}
 
-    fn protocol(&self) -> Cow<'_, str> {
-        Cow::from("dns")
+struct MyMessageType(MessageType);
+
+impl fmt::Display for MyMessageType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            MessageType::Query => write!(f, "query"),
+            MessageType::Response => write!(f, "response"),
+        }
     }
-}*/
+}
+
+struct MyOpCode(op_code::OpCode);
+
+impl fmt::Display for MyOpCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            op_code::OpCode::Query => write!(f, "query"),
+            op_code::OpCode::Status => write!(f, "status"),
+            op_code::OpCode::Notify => write!(f, "notify"),
+            op_code::OpCode::Update => write!(f, "update"),
+        }
+    }
+}

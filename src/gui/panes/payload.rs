@@ -11,9 +11,9 @@ pub fn payload_ui(ui: &mut Ui, packet: &EthernetFrame) {
             LayerData::Layer(layer) => {
                 layer_data = layer.get_next();
             }
-            LayerData::Application(app_layer) => break 'payload layer_data,
+            LayerData::Application(app_layer) => break 'payload LayerData::Application(app_layer),
             LayerData::Data(payload) => {
-                break 'payload layer_data;
+                break 'payload LayerData::Data(payload);
             }
         }
     };
@@ -35,8 +35,8 @@ pub fn payload_ui(ui: &mut Ui, packet: &EthernetFrame) {
             });
         })
         .body(|body| match payload {
-            LayerData::Layer(_) => {}
-            LayerData::Application(app_layer) => todo!(),
+            LayerData::Layer(_) => panic!("this shouldn't be happening"),
+            LayerData::Application(app_layer) => display_payload(body, &[0]),
             LayerData::Data(payload) => display_payload(body, payload),
         });
 }
