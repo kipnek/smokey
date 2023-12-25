@@ -1,4 +1,5 @@
 use crate::packets::packet_traits::{Describable, Layer};
+use crate::packets::shared_objs::Protocol;
 use crate::packets::{
     internet::ip::Ipv4Packet,
     shared_objs::{Description, LayerData, Network},
@@ -8,7 +9,6 @@ use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
 use pnet::packet::Packet;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::fmt::{Display, Write};
 
 #[derive(Clone, Debug)]
 pub struct EthernetHeader {
@@ -69,8 +69,8 @@ EtherType: {}",
         }
     }
 
-    fn protocol(&self) -> Cow<'_, str> {
-        Cow::from("Ethernet")
+    fn protocol(&self) -> Protocol {
+        Protocol::Ethernet
     }
 
     fn source(&self) -> Cow<'_, str> {
@@ -87,13 +87,20 @@ EtherType: {}",
 }
 
 impl Describable for EthernetFrame {
-    fn get_long(&self) -> BTreeMap<Cow<'_, str>, String> {
+    fn get_long(&self) -> BTreeMap<Protocol, String> {
         let mut map = BTreeMap::new();
         map.insert(self.protocol(), self.get_summary());
         let mut layer_data = self.get_next();
         while let LayerData::Layer(layer) = layer_data {
             map.insert(layer.protocol(), layer.get_summary());
             layer_data = layer.get_next();
+        }
+        match layer_data {
+            LayerData::Layer(_) => {}
+            LayerData::Application(app) => {
+                map.insert(app.protocol(), app.get_summary());
+            }
+            LayerData::Data(_) => {}
         }
         map
     }
@@ -108,7 +115,7 @@ impl Describable for EthernetFrame {
             _ => self as _,
         };
 
-        let innermost_layer: &dyn Layer = get_innermost_layer(self);
+        let innermost_layer: LayerData<'_> = get_innermost_layer(LayerData::Layer(self));
 
         Description {
             id: self.id,
@@ -119,11 +126,23 @@ impl Describable for EthernetFrame {
     }
 }
 
-// helper functions
+// helper function
+fn get_innermost_layer<'a>(mut layer: LayerData<'a>) -> LayerData<'a> {
+    let mut last_layer: Option<&'a dyn Layer> = None;
 
-fn get_innermost_layer(mut layer: &dyn Layer) -> &dyn Layer {
-    while let LayerData::Layer(next) = layer.get_next() {
-        layer = next;
+    while let LayerData::Layer(current_layer) = layer {
+        last_layer = Some(current_layer);
+        layer = current_layer.get_next();
     }
-    layer
+
+    match layer {
+        LayerData::Data(_) => {
+            if let Some(last) = last_layer {
+                LayerData::Layer(last)
+            } else {
+                LayerData::Data(&[])
+            }
+        }
+        _ => layer,
+    }
 }

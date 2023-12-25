@@ -6,7 +6,7 @@ pub fn drill_ui(ui: &mut Ui, packet: &EthernetFrame) {
     let drill_down = packet.get_long();
     ui.vertical(|ui| {
         for (key, value) in &drill_down {
-            accordion(ui, key, |ui| {
+            accordion(ui, &key.to_string(), |ui| {
                 ui.label(value);
             });
         }

@@ -9,5 +9,5 @@ fn main() -> Result<(), eframe::Error> {
 
         ..Default::default()
     };
-    eframe::run_native("cnote", options, Box::new(|cc| Box::new(Capture::new())))
+    eframe::run_native("cnote", options, Box::new(|_cc| Box::<Capture>::default()))
 }

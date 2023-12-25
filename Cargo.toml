@@ -21,6 +21,7 @@ egui_plot   = "0.23.0"
 # ieee80211       = { git = "https://github.com/SpiralP/rust-ieee80211.git", branch = "master" }
 egui       = "0.23.0"
 egui_tiles = "0.3.1"
+trust-dns-proto = "0.23.2" 
 rfd = "0.12.1"
 
 [profile.release]

@@ -1,8 +1,8 @@
+use crate::packets::application::app_parser::parse_app_layer;
 use crate::packets::packet_traits::Layer;
-use crate::packets::shared_objs::LayerData;
+use crate::packets::shared_objs::{Application, LayerData, Protocol};
 use pnet::packet::Packet;
 use std::borrow::Cow;
-use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
@@ -13,10 +13,10 @@ pub struct UdpHeader {
     pub malformed: bool,
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct UdpPacket {
     pub header: UdpHeader,
-    pub payload: Box<[u8]>,
+    pub payload: Application,
 }
 
 impl UdpPacket {
@@ -31,10 +31,9 @@ impl UdpPacket {
             malformed: false,
         };
 
-        Some(UdpPacket {
-            header,
-            payload: packet.payload().to_vec().into_boxed_slice(),
-        })
+        let payload = parse_app_layer(packet.payload());
+
+        Some(UdpPacket { header, payload })
     }
 }
 
@@ -57,11 +56,16 @@ malformed: {malformed}"
         )
     }
 
-    fn protocol(&self) -> Cow<'_, str> {
-        Cow::from("UDP")
+    fn protocol(&self) -> Protocol {
+        Protocol::UDP
     }
     fn get_next(&self) -> LayerData {
-        LayerData::Data(&self.payload)
+        match &self.payload {
+            //Application::HttpRequest(_) => todo!(),
+            //Application::HttpResponse(_) => todo!(),
+            Application::Dns(dns_message) => LayerData::Application(dns_message),
+            Application::Other(bytes) => LayerData::Data(bytes), //Application::Tls(_) => todo!(),
+        }
     }
 
     fn source(&self) -> Cow<'_, str> {

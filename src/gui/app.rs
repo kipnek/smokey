@@ -8,7 +8,7 @@ use std::time::Duration;
 pub struct Capture {
     pub running: bool,
     pub sniffer: Sniffer,
-    pub pcap_file: Option<String>,
+    pub label: Option<String>,
     pub tree: egui_tiles::Tree<Pane>,
     pub selected_packet: Option<i32>,
 }
@@ -19,18 +19,15 @@ impl eframe::App for Capture {
             self.get_packets();
             if let Some(handle) = self.sniffer.file_handle.as_ref() {
                 if handle.is_finished() {
-                    self.stop();
+                    self.file_finished();
                 }
             }
         }
         ctx.request_repaint_after(Duration::from_millis(100));
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("Start").clicked() {
-                    if self.sniffer.receiver.is_none() {
-                        self.pcap_file = None;
-                        self.start(None);
-                    }
+                if ui.button("Start").clicked() && self.sniffer.receiver.is_none() {
+                    self.start(None);
                 }
                 if ui.button("Stop").clicked() {
                     self.stop();
@@ -41,12 +38,11 @@ impl eframe::App for Capture {
                         .add_filter("Packet Capture Files", &["pcap", "cap"])
                         .pick_file()
                     {
-                        self.pcap_file = Some(path.to_string_lossy().to_string());
                         self.start(Some(path.to_string_lossy().to_string()))
                     }
                 }
-                if let Some(ref path) = self.pcap_file {
-                    ui.label(format!("pcap file: {}", &path));
+                if let Some(ref label) = self.label {
+                    ui.label(label);
                 }
             });
         });
@@ -61,6 +57,12 @@ impl eframe::App for Capture {
         });
     }
 }
+
+impl Default for Capture {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Capture {
     pub fn new() -> Self {
         Self {
@@ -68,7 +70,7 @@ impl Capture {
             sniffer: Default::default(),
             tree: create_tree(),
             selected_packet: None,
-            pcap_file: None,
+            label: None,
         }
     }
     pub fn get_packets(&mut self) {
@@ -78,14 +80,21 @@ impl Capture {
     }
     pub fn start(&mut self, file: Option<String>) {
         self.sniffer.captured_packets = vec![];
-        if file.is_none() {
-            self.sniffer.capture();
+        if let Some(file) = file {
+            self.label = Some(format!("pcap file: {}", file));
+            self.sniffer.from_file(file);
         } else {
-            self.sniffer.from_file(file.unwrap());
+            self.label = Some("running...".to_string());
+            self.sniffer.capture();
         }
         self.running = true;
     }
     pub fn stop(&mut self) {
+        self.label = None;
+        self.sniffer.stop();
+        self.running = false;
+    }
+    pub fn file_finished(&mut self) {
         self.sniffer.stop();
         self.running = false;
     }

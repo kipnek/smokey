@@ -1,5 +1,5 @@
 use crate::packets::packet_traits::Layer;
-use crate::packets::shared_objs::{LayerData, Transport};
+use crate::packets::shared_objs::{LayerData, Protocol, Transport};
 use crate::packets::transport::{tcp::TcpPacket, udp::UdpPacket};
 use pnet::packet::Packet;
 use pnet::packet::{
@@ -7,7 +7,6 @@ use pnet::packet::{
     ipv4::Ipv4OptionIterable,
 };
 use std::borrow::Cow;
-use std::fmt::{Display, Write};
 
 #[derive(Debug, Clone)]
 pub struct Ipv4Header {
@@ -175,8 +174,8 @@ flags: reserved : {reserved}, dont fragment : {dontfrag},  more fragment : {more
 options: {options_string}"
         )
     }
-    fn protocol(&self) -> Cow<'_, str> {
-        Cow::from("IPv4")
+    fn protocol(&self) -> Protocol {
+        Protocol::IPv4
     }
 
     fn get_next(&self) -> LayerData {
