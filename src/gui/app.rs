@@ -19,7 +19,7 @@ impl eframe::App for Capture {
             self.get_packets();
             if let Some(handle) = self.sniffer.file_handle.as_ref() {
                 if handle.is_finished() {
-                    self.stop();
+                    self.file_finished();
                 }
             }
         }
@@ -27,8 +27,6 @@ impl eframe::App for Capture {
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Start").clicked() && self.sniffer.receiver.is_none() {
-                    self.label = Some("running".to_string());
-                    self.label = None;
                     self.start(None);
                 }
                 if ui.button("Stop").clicked() {
@@ -40,12 +38,11 @@ impl eframe::App for Capture {
                         .add_filter("Packet Capture Files", &["pcap", "cap"])
                         .pick_file()
                     {
-                        self.label = Some(path.to_string_lossy().to_string());
                         self.start(Some(path.to_string_lossy().to_string()))
                     }
                 }
-                if let Some(ref path) = self.label {
-                    ui.label(format!("pcap file: {}", &path));
+                if let Some(ref label) = self.label {
+                    ui.label(label);
                 }
             });
         });
@@ -83,15 +80,21 @@ impl Capture {
     }
     pub fn start(&mut self, file: Option<String>) {
         self.sniffer.captured_packets = vec![];
-        if file.is_none() {
-            self.sniffer.capture();
-        } else if let Some(file) = file {
+        if let Some(file) = file {
+            self.label = Some(format!("pcap file: {}", file));
             self.sniffer.from_file(file);
+        } else {
+            self.label = Some("running...".to_string());
+            self.sniffer.capture();
         }
         self.running = true;
     }
     pub fn stop(&mut self) {
-        self.label = Some("not running".to_string());
+        self.label = None;
+        self.sniffer.stop();
+        self.running = false;
+    }
+    pub fn file_finished(&mut self) {
         self.sniffer.stop();
         self.running = false;
     }

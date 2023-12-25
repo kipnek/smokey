@@ -1,14 +1,14 @@
-use super::packet_traits::AppLayer;
 use crate::packets::application::{
     dns::DnsMessage,
     http::{HttpRequest, HttpResponse},
     tls::Tls,
 };
-use crate::packets::data_link::ethernet::EthernetFrame;
-use crate::packets::internet::ip::Ipv4Packet;
-use crate::packets::packet_traits::Layer;
-use crate::packets::transport::tcp::TcpPacket;
-use crate::packets::transport::udp::UdpPacket;
+use crate::packets::{
+    data_link::ethernet::EthernetFrame,
+    internet::ip::Ipv4Packet,
+    packet_traits::{AppLayer, Layer},
+    transport::{tcp::TcpPacket, udp::UdpPacket},
+};
 use std::fmt;
 
 #[derive(Debug, Clone)]
