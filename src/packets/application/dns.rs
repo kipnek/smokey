@@ -1,6 +1,7 @@
 use crate::packets::{packet_traits::AppLayer, shared_objs::Protocol};
 use core::fmt;
 use trust_dns_proto::{
+    error::ProtoError,
     op::{op_code, Header, Message, MessageParts, MessageType, Query},
     rr::Record,
     serialize::binary::BinDecodable,
@@ -14,21 +15,26 @@ pub struct DnsMessage {
 }
 
 impl DnsMessage {
-    pub fn new(dns_message: Message) -> DnsMessage {
-        let dns_message = MessageParts::from(dns_message);
-        DnsMessage {
-            header: dns_message.header,
-            questions: dns_message.queries,
-            answers: dns_message.answers,
+    pub fn new(bytes: &[u8]) -> Result<DnsMessage, ProtoError> {
+        match DnsMessage::from_bytes(bytes) {
+            Ok(dns_message) => {
+                let dns_message = MessageParts::from(dns_message);
+                Ok(DnsMessage {
+                    header: dns_message.header,
+                    questions: dns_message.queries,
+                    answers: dns_message.answers,
+                })
+            }
+            Err(e) => Err(e),
         }
     }
 }
 
 impl DnsMessage {
-    pub fn from_bytes(bytes: &[u8]) -> Result<DnsMessage, String> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Message, ProtoError> {
         match parse_dns_message(bytes) {
-            Ok(message) => Ok(DnsMessage::new(message)),
-            Err(e) => Err(e.to_string()),
+            Ok(message) => Ok(message),
+            Err(e) => Err(e),
         }
     }
 }
