@@ -141,12 +141,11 @@ impl Capture {
         if let Some(file) = file {
             self.label = Some(format!("file: {}", file));
             self.sniffer.from_file(file);
-            self.running = true;
         } else if let Some(ref device) = self.device {
             self.label = Some("running...".to_string());
             self.sniffer.capture(device);
-            self.running = true;
         }
+        self.running = true;
     }
     pub fn stop(&mut self) {
         self.label = None;
