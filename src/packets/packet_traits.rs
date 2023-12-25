@@ -33,6 +33,7 @@ pub trait AppLayer: Send + Sync + Debug {
 
     fn protocol(&self) -> Protocol;
 
+    fn payload(&self) -> Vec<u8>;
     fn info(&self) -> String {
         "Unknown protocol, info not available".to_owned()
     }

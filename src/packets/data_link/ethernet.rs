@@ -1,4 +1,3 @@
-use crate::gui::app;
 use crate::packets::packet_traits::{Describable, Layer};
 use crate::packets::shared_objs::Protocol;
 use crate::packets::{

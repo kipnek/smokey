@@ -1,7 +1,7 @@
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::packet_traits::Layer;
 use crate::packets::shared_objs::LayerData;
-use egui::{Context, FontFamily::Monospace, RichText, Sense, Ui, WidgetText};
+use egui::{FontFamily::Monospace, RichText, Ui};
 use egui_extras::{Column, TableBody, TableBuilder};
 use std::fmt::Write;
 pub fn payload_ui(ui: &mut Ui, packet: &EthernetFrame) {
@@ -35,8 +35,10 @@ pub fn payload_ui(ui: &mut Ui, packet: &EthernetFrame) {
             });
         })
         .body(|body| match payload {
-            LayerData::Layer(_) => panic!("this shouldn't be happening"),
-            LayerData::Application(app_layer) => display_payload(body, &[0]),
+            LayerData::Layer(layer) => {
+                panic!("layer data in payload.rs\n protocol: {}", layer.protocol())
+            }
+            LayerData::Application(app_layer) => display_payload(body, &app_layer.payload()),
             LayerData::Data(payload) => display_payload(body, payload),
         });
 }

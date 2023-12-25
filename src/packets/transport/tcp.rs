@@ -110,7 +110,7 @@ flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {u
             //Application::HttpRequest(d) => {},
             //Application::HttpResponse(d) => {},
             Application::Dns(dns_message) => LayerData::Application(dns_message),
-            Application::Other(bytes) => LayerData::Data(&bytes),
+            Application::Other(bytes) => LayerData::Data(bytes),
             //Application::Tls(_) => todo!(),
         }
     }

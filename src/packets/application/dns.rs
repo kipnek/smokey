@@ -1,11 +1,10 @@
+use crate::packets::{packet_traits::AppLayer, shared_objs::Protocol};
 use core::fmt;
-use std::borrow::Cow;
-
-use crate::packets::packet_traits::AppLayer;
-use crate::packets::shared_objs::Protocol;
-use trust_dns_proto::op::{op_code, Header, Message, MessageParts, MessageType, Query};
-use trust_dns_proto::rr::Record;
-use trust_dns_proto::serialize::binary::BinDecodable;
+use trust_dns_proto::{
+    op::{op_code, Header, Message, MessageParts, MessageType, Query},
+    rr::Record,
+    serialize::binary::BinDecodable,
+};
 
 #[derive(Debug, Clone)]
 pub struct DnsMessage {
@@ -27,7 +26,7 @@ impl DnsMessage {
 
 impl DnsMessage {
     pub fn from_bytes(bytes: &[u8]) -> Result<DnsMessage, String> {
-        match parse_dns_message(&bytes) {
+        match parse_dns_message(bytes) {
             Ok(message) => Ok(DnsMessage::new(message)),
             Err(e) => Err(e.to_string()),
         }
@@ -51,11 +50,15 @@ impl AppLayer for DnsMessage {
     fn info(&self) -> String {
         format!("dns")
     }
+
+    fn payload(&self) -> Vec<u8> {
+        vec![]
+    }
 }
 
-struct MyMessageType(MessageType);
+struct DnsMessageType(MessageType);
 
-impl fmt::Display for MyMessageType {
+impl fmt::Display for DnsMessageType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             MessageType::Query => write!(f, "query"),
@@ -64,9 +67,9 @@ impl fmt::Display for MyMessageType {
     }
 }
 
-struct MyOpCode(op_code::OpCode);
+struct DnsOpCode(op_code::OpCode);
 
-impl fmt::Display for MyOpCode {
+impl fmt::Display for DnsOpCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             op_code::OpCode::Query => write!(f, "query"),

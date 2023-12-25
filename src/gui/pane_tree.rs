@@ -48,7 +48,7 @@ impl<'a> Behavior<Pane> for TreeBehavior<'a> {
                     gui::panes::payload::payload_ui(ui, packet);
                 }
             }
-            Module::PacketGraph => gui::panes::graph::graph_ui(ui, &self.captured_packets),
+            Module::PacketGraph => gui::panes::graph::graph_ui(ui, self.captured_packets),
         }
 
         if dragged {
@@ -69,7 +69,7 @@ pub fn create_tree() -> egui_tiles::Tree<Pane> {
     let tabs = vec![
         tiles.insert_pane(Pane {
             title: "Packets".into(),
-            module: Module::Packets(PacketTable::new()),
+            module: Module::Packets(PacketTable::default()),
         }),
         tiles.insert_pane(Pane {
             title: "Drill Down".into(),

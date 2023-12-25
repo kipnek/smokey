@@ -1,15 +1,15 @@
-use std::fmt;
-use std::path::Display;
-
 use super::packet_traits::AppLayer;
 use crate::packets::application::{
-    dns::DnsMessage, http_request::HttpRequest, http_response::HttpResponse, tls::Tls,
+    dns::DnsMessage,
+    http::{HttpRequest, HttpResponse},
+    tls::Tls,
 };
 use crate::packets::data_link::ethernet::EthernetFrame;
 use crate::packets::internet::ip::Ipv4Packet;
 use crate::packets::packet_traits::Layer;
 use crate::packets::transport::tcp::TcpPacket;
 use crate::packets::transport::udp::UdpPacket;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Description<'a> {
@@ -20,7 +20,7 @@ pub struct Description<'a> {
 }
 
 pub enum Data {
-    Ethernet(EthernetFrame),
+    Ethernet(Box<EthernetFrame>),
     Other(Box<[u8]>),
 }
 

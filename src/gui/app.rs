@@ -26,11 +26,10 @@ impl eframe::App for Capture {
         ctx.request_repaint_after(Duration::from_millis(100));
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("Start").clicked() {
-                    if self.sniffer.receiver.is_none() {
-                        self.label = None;
-                        self.start(None);
-                    }
+                if ui.button("Start").clicked() && self.sniffer.receiver.is_none() {
+                    self.label = Some("running".to_string());
+                    self.label = None;
+                    self.start(None);
                 }
                 if ui.button("Stop").clicked() {
                     self.stop();
@@ -61,6 +60,12 @@ impl eframe::App for Capture {
         });
     }
 }
+
+impl Default for Capture {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Capture {
     pub fn new() -> Self {
         Self {
@@ -79,10 +84,9 @@ impl Capture {
     pub fn start(&mut self, file: Option<String>) {
         self.sniffer.captured_packets = vec![];
         if file.is_none() {
-            self.label = Some("running".to_string());
             self.sniffer.capture();
-        } else {
-            self.sniffer.from_file(file.unwrap());
+        } else if let Some(file) = file {
+            self.sniffer.from_file(file);
         }
         self.running = true;
     }
