@@ -64,7 +64,8 @@ malformed: {malformed}"
             //Application::HttpRequest(_) => todo!(),
             //Application::HttpResponse(_) => todo!(),
             Application::Dns(dns_message) => LayerData::Application(dns_message),
-            Application::Other(bytes) => LayerData::Data(bytes), //Application::Tls(_) => todo!(),
+            Application::Other(bytes) => LayerData::Data(bytes),
+            //Application::Tls(_) => todo!(),
         }
     }
 

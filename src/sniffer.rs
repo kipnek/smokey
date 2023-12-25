@@ -13,37 +13,36 @@ pub struct Sniffer {
 }
 
 impl Sniffer {
-    pub fn capture(&mut self) {
+    pub fn capture(&mut self, device: &str) {
         let (sender, receiver) = mpsc::channel();
         self.receiver = Some(receiver);
-        let interface = Some(Device::lookup().unwrap().unwrap());
+        //let interface = Some(Device::lookup().unwrap().unwrap());
+        let device = String::from(device);
         thread::spawn(move || {
             let mut index = 0;
 
             //only for development
             //let device = Device::lookup().unwrap().expect("Device Lookup failed");
 
-            if let Some(interface) = interface {
-                let mut cap = pcap::Capture::from_device(interface)
-                    .unwrap()
-                    .immediate_mode(true)
-                    .promisc(true)
-                    .open()
-                    .unwrap();
-                //use when more types are captured
-                //let Linktype(_cap_type) = cap.get_datalink();
+            let mut cap = pcap::Capture::from_device(&*device)
+                .unwrap()
+                .immediate_mode(true)
+                .promisc(true)
+                .open()
+                .unwrap();
+            //use when more types are captured
+            //let Linktype(_cap_type) = cap.get_datalink();
 
-                while let Ok(packet) = cap.next_packet() {
-                    let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
-                        continue;
-                    };
-                    let result = sender.send(eth_frame);
-                    if result.is_err() {
-                        // receiver was dropped
-                        break;
-                    }
-                    index += 1;
+            while let Ok(packet) = cap.next_packet() {
+                let Some(eth_frame) = EthernetFrame::new(index, &packet) else {
+                    continue;
+                };
+                let result = sender.send(eth_frame);
+                if result.is_err() {
+                    // receiver was dropped
+                    break;
                 }
+                index += 1;
             }
         });
     }
@@ -72,7 +71,7 @@ impl Sniffer {
         self.receiver = None;
     }
 
-    pub fn get_interfaces() -> Result<Vec<Device>, pcap::Error> {
+    pub fn get_interfaces(&mut self) -> Result<Vec<Device>, pcap::Error> {
         let devices = pcap::Device::list().expect("no devices");
         Ok(devices)
     }
