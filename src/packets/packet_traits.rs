@@ -1,4 +1,4 @@
-use crate::packets::shared_objs::{Description, LayerData};
+use crate::packets::shared_objs::LayerData;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -45,7 +45,9 @@ pub trait Describable: Send + Sync + Debug + Layer {
 
     fn get_id(&self) -> i32;
 
-    fn get_description(&self) -> Description<'_>;
+    //fn get_description(&self) -> Description<'_>;
+
+    fn flatten(&self) -> Vec<LayerData<'_>>;
 }
 
 /*

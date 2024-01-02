@@ -11,13 +11,14 @@ use crate::packets::{
 };
 use std::fmt;
 
+/*
 #[derive(Debug, Clone)]
 pub struct Description<'a> {
     pub id: i32,
     pub timestamp: &'a str,
     pub src_dest_layer: &'a dyn Layer,
-    pub info_layer: LayerData<'a>,
-}
+    pub info_layer: &'a LayerData<'a>,
+}*/
 
 pub enum Data {
     Ethernet(Box<EthernetFrame>),

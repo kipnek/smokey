@@ -2,7 +2,7 @@ use crate::packets::packet_traits::{Describable, Layer};
 use crate::packets::shared_objs::Protocol;
 use crate::packets::{
     internet::ip::Ipv4Packet,
-    shared_objs::{Description, LayerData, Network},
+    shared_objs::{LayerData, Network},
 };
 use chrono::Utc;
 use pnet::packet::ethernet::{EtherType, EtherTypes, EthernetPacket};
@@ -109,23 +109,30 @@ impl Describable for EthernetFrame {
         self.id
     }
 
-    fn get_description(&self) -> Description<'_> {
-        let next_else_self: &dyn Layer = match self.get_next() {
-            LayerData::Layer(x) => x,
-            _ => self as _,
-        };
+    fn flatten(&self) -> Vec<LayerData<'_>> {
+        let mut retvec = vec![];
+        let mut layer = Some(self as &'_ dyn Layer);
 
-        let innermost_layer: LayerData<'_> = get_innermost_layer(LayerData::Layer(self));
+        while let Some(current_layer) = layer {
+            // Add the current layer to the result vector
+            retvec.push(LayerData::Layer(current_layer));
 
-        Description {
-            id: self.id,
-            timestamp: &self.timestamp,
-            src_dest_layer: next_else_self,
-            info_layer: innermost_layer,
+            // Determine the next layer
+            layer = match current_layer.get_next() {
+                LayerData::Layer(l) => Some(l),
+                LayerData::Application(a) => {
+                    retvec.push(LayerData::Application(a));
+                    None
+                }
+                _ => None,
+            };
         }
+
+        retvec
     }
 }
 
+/*
 // helper function
 fn get_innermost_layer<'a>(mut layer: LayerData<'a>) -> LayerData<'a> {
     let mut last_layer: Option<&'a dyn Layer> = None;
@@ -146,3 +153,4 @@ fn get_innermost_layer<'a>(mut layer: LayerData<'a>) -> LayerData<'a> {
         _ => layer,
     }
 }
+*/

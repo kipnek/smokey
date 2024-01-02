@@ -1,6 +1,8 @@
-use crate::packets::application::app_parser::parse_app_layer;
-use crate::packets::packet_traits::Layer;
-use crate::packets::shared_objs::{Application, LayerData, Protocol};
+use crate::packets::{
+    application::app_parser::parse_app_layer,
+    packet_traits::Layer,
+    shared_objs::{Application, LayerData, Protocol},
+};
 use pnet::packet::Packet;
 use std::borrow::Cow;
 
@@ -105,6 +107,7 @@ flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {u
     fn protocol(&self) -> Protocol {
         Protocol::TCP
     }
+
     fn get_next(&self) -> LayerData {
         match &self.payload {
             //Application::HttpRequest(d) => {},

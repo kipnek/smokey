@@ -1,7 +1,7 @@
+use std::borrow::Cow;
+
 use crate::packets::{
-    data_link::ethernet::EthernetFrame,
-    packet_traits::{Describable, Layer},
-    shared_objs::LayerData,
+    data_link::ethernet::EthernetFrame, packet_traits::Describable, shared_objs::LayerData,
 };
 
 use egui_extras::{Column, TableBuilder};
@@ -60,29 +60,36 @@ impl PacketTable {
             .body(|body| {
                 body.rows(18.0, data.len(), |index, mut row| {
                     let packet = &data[index];
-                    let description = packet.get_description();
-                    let info = match description.info_layer {
-                        LayerData::Layer(layer) => layer.info(),
-                        LayerData::Application(layer) => layer.info(),
-                        LayerData::Data(_) => {
-                            panic!(
-                                "shouldnt happen, in packet table \n packet summary:{}",
-                                packet.get_summary()
-                            )
-                        }
+                    let flattened = packet.flatten();
+
+                    let next_else_self = match flattened.get(1) {
+                        Some(value) => value,
+                        None => flattened.get(0).unwrap(),
                     };
+                    let innermost_layer = flattened.last().unwrap();
+
+                    let (source, destination) = match next_else_self {
+                        LayerData::Layer(l) => (l.source(), l.destination()),
+                        _ => (Cow::from(""), Cow::from("")),
+                    };
+                    let info = match *innermost_layer {
+                        LayerData::Layer(l) => l.info(),
+                        LayerData::Application(l) => l.info(),
+                        _ => "".to_string(),
+                    };
+
                     [
-                        description.id.to_string().as_str(),
-                        description.timestamp,
-                        description.src_dest_layer.source().as_ref(),
-                        description.src_dest_layer.destination().as_ref(),
+                        packet.id.to_string().as_str(),
+                        packet.timestamp.as_ref(),
+                        source.as_ref(),
+                        destination.as_ref(),
                         info.as_str(),
                     ]
                     .into_iter()
                     .for_each(|text| {
                         row.col(|ui| {
                             if ui.button(text).clicked() {
-                                *selected_packet = Some(description.id);
+                                *selected_packet = Some(packet.id);
                             }
                         });
                     });

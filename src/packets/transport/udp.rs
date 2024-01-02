@@ -59,6 +59,7 @@ malformed: {malformed}"
     fn protocol(&self) -> Protocol {
         Protocol::UDP
     }
+
     fn get_next(&self) -> LayerData {
         match &self.payload {
             //Application::HttpRequest(_) => todo!(),
