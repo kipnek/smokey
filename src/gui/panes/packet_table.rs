@@ -62,44 +62,38 @@ impl PacketTable {
                     let packet = &data[index];
                     let flattened = packet.flatten();
 
-                    if !is_filtered(&flattened) {
-                        let next_else_self = match flattened.get(1) {
-                            Some(value) => value,
-                            None => flattened.get(0).unwrap(),
-                        };
-                        let innermost_layer = flattened.last().unwrap();
+                    let next_else_self = match flattened.get(1) {
+                        Some(value) => value,
+                        None => flattened.get(0).unwrap(),
+                    };
+                    let innermost_layer = flattened.last().unwrap();
 
-                        let (source, destination) = match next_else_self {
-                            LayerData::Layer(l) => (l.source(), l.destination()),
-                            _ => (Cow::from(""), Cow::from("")),
-                        };
-                        let info = match *innermost_layer {
-                            LayerData::Layer(l) => l.info(),
-                            LayerData::Application(l) => l.info(),
-                            _ => "".to_string(),
-                        };
+                    let (source, destination) = match next_else_self {
+                        LayerData::Layer(l) => (l.source(), l.destination()),
+                        _ => (Cow::from(""), Cow::from("")),
+                    };
+                    let info = match *innermost_layer {
+                        LayerData::Layer(l) => l.info(),
+                        LayerData::Application(l) => l.info(),
+                        _ => "".to_string(),
+                    };
 
-                        [
-                            packet.id.to_string().as_str(),
-                            packet.timestamp.as_ref(),
-                            source.as_ref(),
-                            destination.as_ref(),
-                            info.as_str(),
-                        ]
-                        .into_iter()
-                        .for_each(|text| {
-                            row.col(|ui| {
-                                if ui.button(text).clicked() {
-                                    *selected_packet = Some(packet.id);
-                                }
-                            });
+                    [
+                        packet.id.to_string().as_str(),
+                        packet.timestamp.as_ref(),
+                        source.as_ref(),
+                        destination.as_ref(),
+                        info.as_str(),
+                    ]
+                    .into_iter()
+                    .for_each(|text| {
+                        row.col(|ui| {
+                            if ui.button(text).clicked() {
+                                *selected_packet = Some(packet.id);
+                            }
                         });
-                    }
+                    });
                 });
             });
     }
-}
-
-fn is_filtered(flattened: &Vec<LayerData>) -> bool {
-    false
 }
