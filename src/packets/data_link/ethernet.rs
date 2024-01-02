@@ -110,47 +110,21 @@ impl Describable for EthernetFrame {
     }
 
     fn flatten(&self) -> Vec<LayerData<'_>> {
-        let mut retvec = vec![];
-        let mut layer = Some(self as &'_ dyn Layer);
+        let mut retvec = Vec::new();
+        let mut current_layer = Some(self as &'_ dyn Layer);
 
-        while let Some(current_layer) = layer {
-            // Add the current layer to the result vector
-            retvec.push(LayerData::Layer(current_layer));
-
-            // Determine the next layer
-            layer = match current_layer.get_next() {
+        while let Some(layer) = current_layer {
+            retvec.push(LayerData::Layer(layer));
+            current_layer = match layer.get_next() {
                 LayerData::Layer(l) => Some(l),
                 LayerData::Application(a) => {
                     retvec.push(LayerData::Application(a));
                     None
                 }
-                _ => None,
+                LayerData::Data(_) => None,
             };
         }
 
         retvec
     }
 }
-
-/*
-// helper function
-fn get_innermost_layer<'a>(mut layer: LayerData<'a>) -> LayerData<'a> {
-    let mut last_layer: Option<&'a dyn Layer> = None;
-
-    while let LayerData::Layer(current_layer) = layer {
-        last_layer = Some(current_layer);
-        layer = current_layer.get_next();
-    }
-
-    match layer {
-        LayerData::Data(_) => {
-            if let Some(last) = last_layer {
-                LayerData::Layer(last)
-            } else {
-                LayerData::Data(&[])
-            }
-        }
-        _ => layer,
-    }
-}
-*/
