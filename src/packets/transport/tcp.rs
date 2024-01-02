@@ -71,7 +71,7 @@ impl TcpPacket {
 }
 
 impl Layer for TcpPacket {
-    fn get_summary(&self) -> BTreeMap<String, String> {
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String> {
         let mut btree = BTreeMap::new();
         let TcpHeader {
             source_port,
@@ -98,21 +98,18 @@ impl Layer for TcpPacket {
             urg, ack, psh, rst, syn, fin
         );
 
-        btree.insert("source_port".to_string(), source_port.to_string());
-        btree.insert("destination_port".to_string(), destination_port.to_string());
-        btree.insert("sequence_number".to_string(), sequence_number.to_string());
+        btree.insert("source_port".into(), source_port.to_string());
+        btree.insert("destination_port".into(), destination_port.to_string());
+        btree.insert("sequence_number".into(), sequence_number.to_string());
         btree.insert(
-            "acknowledgment_number".to_string(),
+            "acknowledgment_number".into(),
             acknowledgment_number.to_string(),
         );
-        btree.insert(
-            "source_port".to_string(),
-            data_offset_reserved_flags.to_string(),
-        );
-        btree.insert("window_size".to_string(), window_size.to_string());
-        btree.insert("checksum".to_string(), checksum.to_string());
-        btree.insert("urgent_pointer".to_string(), urgent_pointer.to_string());
-        btree.insert("flags".to_string(), flags_string);
+        btree.insert("source_port".into(), data_offset_reserved_flags.to_string());
+        btree.insert("window_size".into(), window_size.to_string());
+        btree.insert("checksum".into(), checksum.to_string());
+        btree.insert("urgent_pointer".into(), urgent_pointer.to_string());
+        btree.insert("flags".into(), flags_string);
 
         btree
     }

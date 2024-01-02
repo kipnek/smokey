@@ -53,14 +53,14 @@ impl EthernetFrame {
 
 //trait impls
 impl Layer for EthernetFrame {
-    fn get_summary(&self) -> BTreeMap<String, String> {
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String> {
         let mut btree = BTreeMap::new();
-        btree.insert("source_mac".to_string(), self.header.source_mac.to_string());
+        btree.insert("source_mac".into(), self.header.source_mac.to_string());
         btree.insert(
-            "destination_mac".to_string(),
+            "destination_mac".into(),
             self.header.destination_mac.to_string(),
         );
-        btree.insert("ether_type".to_string(), self.header.ether_type.to_string());
+        btree.insert("ether_type".into(), self.header.ether_type.to_string());
         btree
     }
 
@@ -89,7 +89,7 @@ impl Layer for EthernetFrame {
 }
 
 impl Describable for EthernetFrame {
-    fn get_long(&self) -> BTreeMap<Protocol, BTreeMap<String, String>> {
+    fn get_long(&self) -> BTreeMap<Protocol, BTreeMap<Cow<'_, str>, String>> {
         let mut map = BTreeMap::new();
         map.insert(self.protocol(), self.get_summary());
         let mut layer_data = self.get_next();

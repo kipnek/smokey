@@ -1,6 +1,6 @@
 use crate::packets::{packet_traits::AppLayer, shared_objs::Protocol};
 use core::fmt;
-use std::collections::BTreeMap;
+use std::{borrow::Cow, collections::BTreeMap};
 use trust_dns_proto::{
     error::ProtoError,
     op::{op_code, Header, Message, MessageParts, MessageType, Query},
@@ -46,7 +46,7 @@ fn parse_dns_message(data: &[u8]) -> Result<Message, trust_dns_proto::error::Pro
 }
 
 impl AppLayer for DnsMessage {
-    fn get_summary(&self) -> BTreeMap<String, String> {
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String> {
         BTreeMap::new()
     }
 

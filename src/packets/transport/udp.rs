@@ -37,7 +37,7 @@ impl UdpPacket {
 }
 
 impl Layer for UdpPacket {
-    fn get_summary(&self) -> BTreeMap<String, String> {
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String> {
         let mut btree = BTreeMap::new();
         let UdpHeader {
             source_port,
@@ -46,10 +46,10 @@ impl Layer for UdpPacket {
             checksum,
         } = &self.header;
 
-        btree.insert("source_port".to_string(), source_port.to_string());
-        btree.insert("destination_port".to_string(), destination_port.to_string());
-        btree.insert("length".to_string(), length.to_string());
-        btree.insert("checksum".to_string(), checksum.to_string());
+        btree.insert("source_port".into(), source_port.to_string());
+        btree.insert("destination_port".into(), destination_port.to_string());
+        btree.insert("length".into(), length.to_string());
+        btree.insert("checksum".into(), checksum.to_string());
 
         btree
     }

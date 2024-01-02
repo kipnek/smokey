@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use super::shared_objs::Protocol;
 
 pub trait Layer: Send + Sync + Debug {
-    fn get_summary(&self) -> BTreeMap<String, String>;
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String>;
 
     fn get_next(&self) -> LayerData;
 
@@ -21,7 +21,7 @@ pub trait Layer: Send + Sync + Debug {
 }
 
 pub trait AppLayer: Send + Sync + Debug {
-    fn get_summary(&self) -> BTreeMap<String, String>;
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String>;
 
     fn source(&self) -> Cow<'_, str> {
         Cow::from("na")
@@ -41,7 +41,7 @@ pub trait AppLayer: Send + Sync + Debug {
 }
 
 pub trait Describable: Send + Sync + Debug + Layer {
-    fn get_long(&self) -> BTreeMap<Protocol, BTreeMap<String, String>>;
+    fn get_long(&self) -> BTreeMap<Protocol, BTreeMap<Cow<'_, str>, String>>;
 
     fn get_id(&self) -> i32;
 

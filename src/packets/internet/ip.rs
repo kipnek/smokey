@@ -132,7 +132,7 @@ impl Ipv4Packet {
 }
 
 impl Layer for Ipv4Packet {
-    fn get_summary(&self) -> BTreeMap<String, String> {
+    fn get_summary(&self) -> BTreeMap<Cow<'_, str>, String> {
         let mut btree = BTreeMap::new();
         let Ipv4Header {
             version_ihl,
@@ -164,24 +164,24 @@ impl Layer for Ipv4Packet {
             "reserved {}, dont frag {}, morefrag {}",
             reserved, dontfrag, morefrag
         );
-        btree.insert("version_ihl".to_string(), version_ihl.to_string());
-        btree.insert("dscp".to_string(), dscp.to_string());
-        btree.insert("ecn".to_string(), ecn.to_string());
-        btree.insert("total_length".to_string(), total_length.to_string());
-        btree.insert("identification".to_string(), identification.to_string());
-        btree.insert("options".to_string(), options_string);
+        btree.insert("version_ihl".into(), version_ihl.to_string());
+        btree.insert("dscp".into(), dscp.to_string());
+        btree.insert("ecn".into(), ecn.to_string());
+        btree.insert("total_length".into(), total_length.to_string());
+        btree.insert("identification".into(), identification.to_string());
+        btree.insert("options".into(), options_string);
         btree.insert(
-            "flags_fragment_offset".to_string(),
+            "flags_fragment_offset".into(),
             flags_fragment_offset.to_string(),
         );
-        btree.insert("time_to_live".to_string(), time_to_live.to_string());
-        btree.insert("header_checksum".to_string(), header_checksum.to_string());
-        btree.insert("source_address".to_string(), source_address.to_string());
+        btree.insert("time_to_live".into(), time_to_live.to_string());
+        btree.insert("header_checksum".into(), header_checksum.to_string());
+        btree.insert("source_address".into(), source_address.to_string());
         btree.insert(
-            "destination_address".to_string(),
+            "destination_address".into(),
             destination_address.to_string(),
         );
-        btree.insert("flags".to_string(), flags_string);
+        btree.insert("flags".into(), flags_string);
 
         btree
     }
