@@ -7,6 +7,7 @@ use pnet::packet::{
     ipv4::Ipv4OptionIterable,
 };
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct Ipv4Header {
@@ -131,7 +132,8 @@ impl Ipv4Packet {
 }
 
 impl Layer for Ipv4Packet {
-    fn get_summary(&self) -> String {
+    fn get_summary(&self) -> BTreeMap<String, String> {
+        let mut btree = BTreeMap::new();
         let Ipv4Header {
             version_ihl,
             dscp,
@@ -158,21 +160,30 @@ impl Layer for Ipv4Packet {
             .collect::<Vec<&str>>()
             .join("\n");
 
-        format!(
-            "version: {version_ihl}
-dscp: {dscp}
-ecn: {ecn}
-total_length: {total_length}
-identification: {identification}
-flags_fragment_offset: {flags_fragment_offset}
-time_to_live: {time_to_live}
-header_checksum: {header_checksum}
-source_address: {source_address}
-destination_address: {destination_address}
-next_header: protocol : {next_header}
-flags: reserved : {reserved}, dont fragment : {dontfrag},  more fragment : {morefrag}
-options: {options_string}"
-        )
+        let flags_string = format!(
+            "reserved {}, dont frag {}, morefrag {}",
+            reserved, dontfrag, morefrag
+        );
+        btree.insert("version_ihl".to_string(), version_ihl.to_string());
+        btree.insert("dscp".to_string(), dscp.to_string());
+        btree.insert("ecn".to_string(), ecn.to_string());
+        btree.insert("total_length".to_string(), total_length.to_string());
+        btree.insert("identification".to_string(), identification.to_string());
+        btree.insert("options".to_string(), options_string);
+        btree.insert(
+            "flags_fragment_offset".to_string(),
+            flags_fragment_offset.to_string(),
+        );
+        btree.insert("time_to_live".to_string(), time_to_live.to_string());
+        btree.insert("header_checksum".to_string(), header_checksum.to_string());
+        btree.insert("source_address".to_string(), source_address.to_string());
+        btree.insert(
+            "destination_address".to_string(),
+            destination_address.to_string(),
+        );
+        btree.insert("flags".to_string(), flags_string);
+
+        btree
     }
     fn protocol(&self) -> Protocol {
         Protocol::IPv4

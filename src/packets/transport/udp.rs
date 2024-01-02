@@ -3,6 +3,7 @@ use crate::packets::packet_traits::Layer;
 use crate::packets::shared_objs::{Application, LayerData, Protocol};
 use pnet::packet::Packet;
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default)]
 pub struct UdpHeader {
@@ -10,7 +11,6 @@ pub struct UdpHeader {
     pub destination_port: u16,
     pub length: u16,
     pub checksum: u16,
-    pub malformed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -28,7 +28,6 @@ impl UdpPacket {
             destination_port: packet.get_destination(),
             length: packet.get_length(),
             checksum: packet.get_checksum(),
-            malformed: false,
         };
 
         let payload = parse_app_layer(packet.payload());
@@ -38,22 +37,21 @@ impl UdpPacket {
 }
 
 impl Layer for UdpPacket {
-    fn get_summary(&self) -> String {
+    fn get_summary(&self) -> BTreeMap<String, String> {
+        let mut btree = BTreeMap::new();
         let UdpHeader {
             source_port,
             destination_port,
             length,
             checksum,
-            malformed,
         } = &self.header;
 
-        format!(
-            "source_port: {source_port}
-destination_port: {destination_port}
-length: {length}
-checksum: {checksum}
-malformed: {malformed}"
-        )
+        btree.insert("source_port".to_string(), source_port.to_string());
+        btree.insert("destination_port".to_string(), destination_port.to_string());
+        btree.insert("length".to_string(), length.to_string());
+        btree.insert("checksum".to_string(), checksum.to_string());
+
+        btree
     }
 
     fn protocol(&self) -> Protocol {

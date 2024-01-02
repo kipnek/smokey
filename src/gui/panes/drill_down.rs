@@ -7,7 +7,9 @@ pub fn drill_ui(ui: &mut Ui, packet: &EthernetFrame) {
     ui.vertical(|ui| {
         for (key, value) in &drill_down {
             accordion(ui, &key.to_string(), |ui| {
-                ui.label(value);
+                for (key, value) in value.iter() {
+                    ui.label(format!("{key} : {value}"));
+                }
             });
         }
     });

@@ -4,7 +4,7 @@ use crate::packets::{
     shared_objs::{Application, LayerData, Protocol},
 };
 use pnet::packet::Packet;
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeMap};
 
 #[derive(Debug, Clone, Default)]
 pub struct TcpHeader {
@@ -71,11 +71,12 @@ impl TcpPacket {
 }
 
 impl Layer for TcpPacket {
-    fn get_summary(&self) -> String {
+    fn get_summary(&self) -> BTreeMap<String, String> {
+        let mut btree = BTreeMap::new();
         let TcpHeader {
             source_port,
             destination_port,
-            sequence_number: _,
+            sequence_number,
             acknowledgment_number,
             data_offset_reserved_flags,
             window_size,
@@ -92,17 +93,28 @@ impl Layer for TcpPacket {
                 },
         } = &self.header;
         let [urg, ack, psh, rst, syn, fin] = [*urg, *ack, *psh, *rst, *syn, *fin].map(u8::from);
+        let flags_string = format!(
+            "urg {}, ack {}, psh {}, rst {}, syn {}, fin {}",
+            urg, ack, psh, rst, syn, fin
+        );
 
-        format!(
-            "source_port: {source_port}
-destination_port: {destination_port}
-acknowledgment_number: {acknowledgment_number}
-data_offset_reserved_flags: {data_offset_reserved_flags}
-window_size: {window_size}
-checksum: {checksum}
-urgent_pointer: {urgent_pointer}
-flags: ack : {ack}, psh : {psh}, rst : {rst}, syn : {syn}, fin : {fin}, urg : {urg}"
-        )
+        btree.insert("source_port".to_string(), source_port.to_string());
+        btree.insert("destination_port".to_string(), destination_port.to_string());
+        btree.insert("sequence_number".to_string(), sequence_number.to_string());
+        btree.insert(
+            "acknowledgment_number".to_string(),
+            acknowledgment_number.to_string(),
+        );
+        btree.insert(
+            "source_port".to_string(),
+            data_offset_reserved_flags.to_string(),
+        );
+        btree.insert("window_size".to_string(), window_size.to_string());
+        btree.insert("checksum".to_string(), checksum.to_string());
+        btree.insert("urgent_pointer".to_string(), urgent_pointer.to_string());
+        btree.insert("flags".to_string(), flags_string);
+
+        btree
     }
     fn protocol(&self) -> Protocol {
         Protocol::TCP
